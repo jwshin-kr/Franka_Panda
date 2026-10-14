@@ -1,0 +1,79 @@
+<mujoco model="franka_panda_scene">
+  <include file="panda_robot.xml"/>
+
+  <compiler angle="radian"/>
+
+  <option timestep="0.001" integrator="implicitfast"/>
+
+  <!-- MuJoCo scales the viewer's frame axes, contact points and force arrows
+       by stat.meansize, the average body size. With only 14 bodies the large
+       enclosure dominates that average (0.25 vs 0.10 in the Flexiv scene,
+       whose 20 finger bodies dilute it), so pin it to the Flexiv value. -->
+  <statistic meansize="0.1"/>
+
+  <asset>
+    <texture type="skybox" builtin="gradient"
+             rgb1="0.3 0.5 0.7" rgb2="0 0 0"
+             width="512" height="3072"/>
+    <texture name="groundplane" type="2d" builtin="checker"
+             rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+             mark="edge" markrgb="0.8 0.8 0.8"
+             width="300" height="300"/>
+    <material name="groundplane" texture="groundplane"
+              texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+    <mesh name="enclosure_decimated" file="cell/enclosure_decimated.STL" scale="0.001 0.001 0.001"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 -0.1 1.5" dir="0 0.2 -1"
+           diffuse="0.7 0.7 0.7" specular="0.3 0.3 0.3"
+           directional="true" castshadow="true"/>
+
+    <!-- Same cell as the Flexiv scene (hand_default.xml): the floor, a wall
+         behind the arm (-x) and a wall to the left (-y). All use MuJoCo's
+         default contype/conaffinity (1/1), so they collide with the robot's
+         collision geoms (also 1/1). Static world geoms don't collide with
+         each other, only with the robot. The Panda base sits at the same
+         origin as the Rizon4 base. -->
+    <geom name="floor" type="plane" size="0 0 0.05" pos="0 0 -0.04"
+          group="0" material="groundplane"
+          friction="0.5 0.02 0.02"/>
+    <geom name="wall_back" type="box" size="0.05 0.85 0.9" pos="-0.28 0 0.9"
+          rgba="0.55 0.57 0.62 0.3" friction="0.5 0.02 0.02"/>
+    <geom name="wall_left" type="box" size="0.85 0.05 0.9" pos="0 -0.45 0.9"
+          rgba="0.55 0.57 0.62 0.3" friction="0.5 0.02 0.02"/>
+
+    <!-- Enclosure / robot cell, visual only (same mesh and placement as in
+         Rizon4_hand_robot.xml). -->
+    <body name="enclosure" pos="-0.293 0.482 -0.091" quat="0.707388 0.706825 0 0">
+      <geom class="no_contact" type="mesh" mesh="enclosure_decimated"/>
+    </body>
+  </worldbody>
+
+  <!-- Self-collision is ON. MuJoCo's filterparent already excludes each
+       parent<->child pair, except for children of a body welded to the world:
+       link0 has no joint, so link0<->link1 must be excluded explicitly (they
+       touch by construction). -->
+  <contact>
+    <exclude body1="link0" body2="link1"/>
+  </contact>
+
+  <!-- Torque actuators. SimFrankaPanda computes
+       tau = kp*(q_des-q) + kd*(qd_des-qd) + tau_ff (+ gravity comp on the arm)
+       and writes to ctrl[]. 7 arm joints + 2 finger joints. -->
+  <actuator>
+    <!-- Panda arm (ctrlrange = joint torque limits, Nm) -->
+    <motor joint="joint1" name="motor_joint1" ctrlrange="-87 87"/>
+    <motor joint="joint2" name="motor_joint2" ctrlrange="-87 87"/>
+    <motor joint="joint3" name="motor_joint3" ctrlrange="-87 87"/>
+    <motor joint="joint4" name="motor_joint4" ctrlrange="-87 87"/>
+    <motor joint="joint5" name="motor_joint5" ctrlrange="-12 12"/>
+    <motor joint="joint6" name="motor_joint6" ctrlrange="-12 12"/>
+    <motor joint="joint7" name="motor_joint7" ctrlrange="-12 12"/>
+
+    <!-- Franka Hand: one force motor per finger (N). 70 N is the hand's
+         continuous grasp force. -->
+    <motor joint="finger_joint1" name="motor_finger1" ctrlrange="-70 70"/>
+    <motor joint="finger_joint2" name="motor_finger2" ctrlrange="-70 70"/>
+  </actuator>
+</mujoco>

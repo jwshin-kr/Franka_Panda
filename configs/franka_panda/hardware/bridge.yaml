@@ -1,0 +1,44 @@
+# C++ Franka bridge config (communication/franka). Spawned by
+# HardwareFrankaPanda with this file as its only argument.
+name: franka_panda_arm
+
+robot:
+  robot_ip: 172.16.0.2
+  # true: no robot connection, the measured state echoes the command. Set false
+  # only for the real robot.
+  mock_mode: true
+  control_mode: joint_torque
+  # The controller's tau_ff already contains g(q) (Pinocchio), so the bridge
+  # removes the gravity the robot adds on its own.
+  enable_gravity_comp: false
+  # enforce: needs a PREEMPT_RT kernel. ignore: run on a generic kernel.
+  realtime_config: enforce
+  limit_rate: true
+  cutoff_frequency: 100.0
+  # Upper thresholds trigger a reflex (robot stops, bridge exits).
+  collision_behavior:
+    lower_torque_thresholds: [20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0]
+    upper_torque_thresholds: [20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0]
+    lower_force_thresholds: [20.0, 20.0, 20.0, 20.0, 20.0, 20.0]
+    upper_force_thresholds: [20.0, 20.0, 20.0, 20.0, 20.0, 20.0]
+
+loop_hz: 1000
+# Commands older than this end the torque control loop (robot holds in Idle).
+command_timeout_s: 0.05
+
+lcm:
+  # unified [arm(7), hand(2)] command; the bridge takes the arm slice
+  ctrl_channel: hw_franka_arm_hand_joint_ctrl
+  joint_meas_channel: hw_franka_arm_joint_meas
+
+mapping:
+  ctrl_joint_offset: 0
+  num_arm_joints: 7
+  joint_names: [joint1, joint2, joint3, joint4, joint5, joint6, joint7]
+  command_sign: [1, 1, 1, 1, 1, 1, 1]
+  measurement_sign: [1, 1, 1, 1, 1, 1, 1]
+
+# Mock-mode initial state (same arm pose as the sim default).
+default_hold_q: [0.0, 0.0, 0.0, -1.5707963, 0.0, 1.5707963, 0.7853982]
+hold_kp: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+hold_kd: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

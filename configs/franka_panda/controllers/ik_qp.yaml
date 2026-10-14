@@ -1,0 +1,144 @@
+name: ik_qp
+ctrl_freq: 1000
+env_mode: sim_real_time
+
+urdf_path: assets/scene/franka_panda/urdf/panda_viser.urdf
+mesh_path:
+  path_1: assets/scene/franka_panda
+  path_2: assets/scene/franka_panda/panda
+  path_3: assets/scene/franka_panda/cell
+
+num_joints: 9
+default_q_values: [
+  0.0, 0.0, 0.0, -1.5707963, 0.0, 1.5707963, 0.7853982,
+  0.04, 0.04,
+]
+
+# Task-space point: URDF/MJCF tcp frame (Franka Hand TCP between the fingertips,
+# fixed offset from the hand link).
+task_link: tcp
+task_point_local: [0.0, 0.0, 0.0]
+
+# Contracting field: v* = vel_gain*(p_des-p) - cart_damping*p_dot, clipped.
+vel_gain: 3.0
+cart_damping: 0.1
+v_max: 0.15
+pos_tol: 0.005
+# Control loop runs at ctrl_freq; FCL+OSQP run on a side thread at plan_freq.
+# Keeping plan << ctrl avoids missed ticks / burst catch-up freak-outs.
+plan_freq: 100
+qd_filter: 0.25          # low-pass on qd_des in the control thread (1 = raw)
+qp_reg: 0.01
+plan_horizon: 0.05
+# When d < d_safe, cap the demanded gap-opening speed (m/s) so the QP stays feasible.
+col_sep_rate_max: 0.25
+use_position_pd: false   # velocity tracking with velocity_control_D_gain
+
+# Joint-space home (key "h")
+joint_vel_gain: 1.0
+joint_damping: 0.5
+joint_pos_tol: 0.02
+
+# Keyboard nudging of p_des (m per keypress).
+target_step: 0.01
+target_step_min: 0.002
+target_step_max: 0.05
+
+# ---------------------------------------------------------------------------
+# Gains (ThreeFingerReactiveGrasping style)
+#   kp = default_kd^2 / (4 * mean_mass_matrix_diag)   # critical damping
+#   require M - delay*kd > 0 and kd - kp*delay > 0
+# Velocity mode uses velocity_control_D_gain with kp=0.
+#
+# mean_mass_matrix_diag = diag(M(q)) from MuJoCo mj_fullM at default_q on
+# panda_default.xml (rigid-body inertia + joint armature). All Panda joints
+# (arm and fingers) inherit armature="0.1" from panda_robot.xml.
+# ---------------------------------------------------------------------------
+est_time_delay: 0.01
+mean_mass_matrix_diag: [
+  1.5055, 2.7921, 1.4682, 1.0561, 0.1434, 0.1543, 0.1067,
+  0.115, 0.115,
+]
+default_kd: [
+  5.0, 8.0, 2.0, 2.0, 1.0, 1.0, 0.2,
+  0.05, 0.05,
+]
+velocity_control_D_gain: [
+  5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0,
+  1.0, 1.0,
+]
+
+# Coulomb friction FF: tau += Fjc * sat(qd_des / friction_phi).
+# Fjc sized to MJCF frictionloss on the Panda arm / fingers (panda_robot.xml
+# has no frictionloss, so 0).
+do_grav_comp: true
+do_friction_comp: true
+do_coriolis_comp: true
+friction_phi: 0.03
+Fjc: [
+  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+  0.0, 0.0,
+]
+Fmc: [
+  0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
+  0.01, 0.01,
+]
+alpha_Fjc: [
+  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+  0.0, 0.0,
+]
+alpha_Fmc: [
+  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+  0.0, 0.0,
+]
+
+joint_velocity_limit: [2, 2, 2, 2, 2, 2, 2,
+                       5, 5]
+
+safty_dist_thr: 0.02
+
+col_link_names: ["link1", "link2", "link3", "link4", "link5", "link6", "link7", "hand"]
+obs_names: ["floor", "wall_back", "wall_left"]
+col_pairs:
+  - ["link2", "wall_back"]
+  - ["link2", "wall_left"]
+  - ["link3", "wall_back"]
+  - ["link3", "wall_left"]
+  - ["link3", "floor"]
+  - ["link4", "wall_back"]
+  - ["link4", "wall_left"]
+  - ["link4", "floor"]
+  - ["link5", "wall_back"]
+  - ["link5", "wall_left"]
+  - ["link5", "floor"]
+  - ["link6", "wall_back"]
+  - ["link6", "wall_left"]
+  - ["link6", "floor"]
+  - ["link7", "wall_back"]
+  - ["link7", "wall_left"]
+  - ["link7", "floor"]
+  - ["hand", "wall_back"]
+  - ["hand", "wall_left"]
+  - ["hand", "floor"]
+
+dict_joints:
+  arm:
+    joint_meas_channel: sw_franka_arm_joint_meas
+    list_joint_idx: [0, 1, 2, 3, 4, 5, 6]
+  hand:
+    joint_meas_channel: sw_franka_hand_joint_meas
+    list_joint_idx: [7, 8]
+
+sub_manager:
+  name: arm_hand_joint_col_info
+  arm_joint_meas_channel: sw_franka_arm_joint_meas
+  hand_joint_meas_channel: sw_franka_hand_joint_meas
+  static_col_info_channel: sw_franka_arm_hand_static_col_info
+  robot_col_info_channel: sw_franka_arm_hand_robot_col_info
+  num_arm_joints: 7
+  num_hand_joints: 2
+
+pub_manager:
+  name: joint_ctrl_pose
+  ctrl_channel: sw_franka_arm_hand_joint_ctrl
+  pose_channel: sw_ik_target_pose

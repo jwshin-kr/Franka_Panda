@@ -1,0 +1,83 @@
+# v2 of collision.yaml (original unchanged): adds the col_aware_debug_v2 overlay.
+# python run_visualizer_v2.py --config configs/visualizer/franka_panda/collision_v2.yaml
+name: franka_panda
+vis_freq: 30
+
+franka_panda:
+  # Channels the sim env publishes joint_meas_t on (SimFrankaPanda).
+  arm_joint_meas_channel: sw_franka_arm_joint_meas
+  hand_joint_meas_channel: sw_franka_hand_joint_meas
+  num_arm_joints: 7
+  num_hand_joints: 2
+
+  # Panda arm + hand + robot cell URDF. Uses relative mesh paths, so it loads
+  # directly (no rewrite needed).
+  urdf_path: assets/scene/franka_panda/urdf/panda_viser.urdf
+  # Optional yourdfpy mesh_dir override; leave blank to use the URDF's own paths.
+  mesh_dir: ""
+
+  # Collision-info channels for the "Show collision geometry" overlay and the
+  # "Show collision distances" dashed lines. Subscribed off the wire so they
+  # match EXACTLY what the collision-aware controller receives (published by
+  # the franka_panda_col env). Leave blank to disable (e.g. non-col env).
+  robot_col_info_channel: sw_franka_arm_hand_robot_col_info
+  static_col_info_channel: sw_franka_arm_hand_static_col_info
+
+  # Draw dashed nearest-point lines when FCL distance < this threshold (m).
+  # Red = robot <-> environment; orange = self-collision.
+  col_dist_thr: 0.10
+
+  # link <-> obstacle pairs (same set as col_aware_grav_comp).
+  col_pairs:
+    - ["link2", "wall_back"]
+    - ["link2", "wall_left"]
+    - ["link3", "wall_back"]
+    - ["link3", "wall_left"]
+    - ["link3", "floor"]
+    - ["link4", "wall_back"]
+    - ["link4", "wall_left"]
+    - ["link4", "floor"]
+    - ["link5", "wall_back"]
+    - ["link5", "wall_left"]
+    - ["link5", "floor"]
+    - ["link6", "wall_back"]
+    - ["link6", "wall_left"]
+    - ["link6", "floor"]
+    - ["link7", "wall_back"]
+    - ["link7", "wall_left"]
+    - ["link7", "floor"]
+    - ["hand", "wall_back"]
+    - ["hand", "wall_left"]
+    - ["hand", "floor"]
+
+  # Non-adjacent robot link pairs (self-collision).
+  self_col_pairs:
+    - ["hand", "link1"]
+    - ["hand", "link2"]
+    - ["hand", "link3"]
+    - ["link7", "link1"]
+    - ["link7", "link2"]
+    - ["link7", "link3"]
+    - ["link6", "link1"]
+    - ["link6", "link2"]
+    - ["link5", "link1"]
+    - ["link5", "link2"]
+
+# ---------------------------------------------------------------------------
+# Debug overlay for the three causes of the "jumpy robot" (v2).
+#  1) ghost robot = joint state the controller used (from joint_ctrl) + lag
+#  2) witness points / trails / jump counter (needs run_controller_v2.py)
+#  3) v* arrows, wrist qd_des plot, gain-activation plot
+col_aware_debug_v2:
+  ctrl_channel: sw_franka_arm_hand_joint_ctrl
+  debug_channel: sw_col_aware_debug_v2
+  ctrl_dt: 0.001            # 1 / ctrl_freq of the controller
+  kp_multiplier: 1.0        # controller kp_multiplier (q_des = q + kp_mult*qd_des*dt)
+  kd_nominal_joint1: 20.0   # controller kd[0]; gain activation = kd[0] / this
+  qd_limit: 2.0             # controller joint_velocity_limit (arm)
+  plot_joints: [5, 6, 7]    # wrist joints shown in the qd_des plot (1-based)
+  plot_history_s: 6.0
+  lag_buffer_s: 5.0         # how far back the lag search looks
+  trail_s: 0.6              # witness-point trail length (s)
+  witness_jump_thr: 0.03    # trail segment drawn red above this (m)
+  vstar_arrow_scale: 0.1    # arrow length = |v*| * scale (m per m/s)
