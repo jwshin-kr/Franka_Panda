@@ -4,3 +4,4 @@ MUJOCO_LOG.TXT
 
 # C++ bridge build
 communication/franka/build/
+.vscode/
