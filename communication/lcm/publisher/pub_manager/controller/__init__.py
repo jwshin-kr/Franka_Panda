@@ -20,6 +20,13 @@ def get_controller_pub_manager(cfg_pub_manager: DictConfig) -> BaseCtrlPubManage
 
         return JointCtrlPubManager(**cfg_pub_manager)
 
+    elif name == "joint_ctrl_imp":
+        from communication.lcm.publisher.pub_manager.controller.JointCtrlImpPubManager import (
+            JointCtrlImpPubManager,
+        )
+
+        return JointCtrlImpPubManager(**cfg_pub_manager)
+
     elif name == "joint_ctrl_pose":
         from communication.lcm.publisher.pub_manager.controller.JointCtrlPosePubManager import (
             JointCtrlPosePubManager,

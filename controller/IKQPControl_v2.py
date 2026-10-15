@@ -33,12 +33,12 @@ impedance:
 
 While the measured tip is off target the Cartesian field keeps advancing q_ref,
 so the torque grows until friction gives way (integral-like action); at the
-target q_ref stops and the arm is held exactly there. ``ref_pos_tol``
-replaces pos_tol (0.2 mm instead of 5 mm) and ``ref_vel_gain`` the field gain
-(6 instead of 3: faster through the friction near the target); qd_des is acceleration limited
-(``ref_qd_max_acc``) so the stiff joint impedance gets no steps. q_ref starts from (and re-syncs to)
-the measured pose: before the first arm measurement no command is sent, and
-after a pause / gap of more than 0.1 s q_ref restarts at the measured pose.
+target q_ref stops and the arm is held exactly there. ``ref_pos_tol``,
+``ref_vel_gain`` and ``ref_v_max`` replace pos_tol, vel_gain and v_max; qd_des
+is acceleration limited (``ref_qd_max_acc``) so the stiff joint impedance gets
+no steps. q_ref starts from (and re-syncs to) the measured pose: before the
+first arm measurement no command is sent, and after a pause / gap of more than
+0.1 s q_ref restarts at the measured pose.
 """
 
 from __future__ import annotations
@@ -67,9 +67,10 @@ class IKQPControllerV2(IKQPController):
             self._ref_qd_max_acc = float(config.get("ref_qd_max_acc", 5.0))
             self._pos_tol = float(config.get("ref_pos_tol", self._pos_tol))
             self._vel_gain = float(config.get("ref_vel_gain", self._vel_gain))
+            self._v_max = float(config.get("ref_v_max", self._v_max))
             print(f"[IKQP v2] Joint reference tracking: kp={self._ref_kp}, "
                   f"kd={self._ref_kd}, pos_tol={self._pos_tol * 1000:.1f} mm, "
-                  f"vel_gain={self._vel_gain}")
+                  f"vel_gain={self._vel_gain}, v_max={self._v_max} m/s")
         self._q_ref = None
         self._qd_ref = None
         self._last_update_t = None
@@ -138,9 +139,10 @@ class IKQPControllerV2(IKQPController):
         self._qd_ref = self._qd_ref + np.clip(target - self._qd_ref, -max_dv, max_dv)
         qd_des = self._qd_ref.copy()
 
-        self._q_ref = self._q_ref + qd_des * self._ctrl_dt
-        self._q_ref = q + np.clip(self._q_ref - q, -self._ref_max_error, self._ref_max_error)
-        self._q_ref = np.clip(self._q_ref, self._q_lower, self._q_upper)
+        q_ref = self._q_ref + qd_des * self._ctrl_dt
+        q_ref = q + np.clip(q_ref - q, -self._ref_max_error, self._ref_max_error)
+        with self._meas_lock:
+            self._q_ref = np.clip(q_ref, self._q_lower, self._q_upper)
 
         tau_ff = self._tau_ff(q, qd, qd_des)
         q_des = self._with_gripper_set_point(self._q_ref)

@@ -1,0 +1,95 @@
+name: impedance
+ctrl_freq: 1000
+env_mode: sim_real_time
+
+urdf_path: assets/scene/franka_fr3/urdf/fr3_robotiq.urdf
+mesh_path:
+  path_1: assets/scene/franka_fr3
+  path_2: assets/scene/franka_fr3/fr3
+  path_3: assets/scene/franka_fr3/cell
+  path_4: assets/scene/franka_fr3/robotiq
+
+num_joints: 8
+num_arm_joints: 7
+# SE(3) task frame: the Robotiq 2F-85 tool centre point (0.15 m along the
+# flange z axis).
+task_frame: tcp
+mode: joint  # start in joint impedance; press `t` for SE(3) task
+
+# Nominal configuration (task nominal = FK(task_frame, default_q)): the default
+# pose [0, 0, 0, -90, 0, 90, 0] deg, gripper open.
+default_q: [
+  0.0, 0.0, 0.0, -1.5707963, 0.0, 1.5707963, 0.0,
+  0.0,
+]
+
+# Robotiq 2F-85 set-point (driver angle, rad: 0 = open .. 0.8 = closed). The
+# gripper is position controlled, so its q_des slot always carries this.
+gripper_joint_idx: [7]
+gripper_q_des: [0.0]
+
+# Joint-space impedance: tau += Kq (q_nom - q) - Dq qd  (plus gravity).
+# Critically damped (same recipe as RoPhiTutorial):
+#   kq_i = dq_i^2 / (4 * mean_mass_matrix_diag_i)
+# mean_mass_matrix_diag: MuJoCo mj_fullM diagonal at default_q on
+# fr3_default.xml (FR3 + Robotiq, incl. joint armature).
+# dq: RoPhiTutorial's [20, 20, 15, 15, 5, 5, 0.2]; joint 7 uses 1.5 because
+# the FR3 wrist + Robotiq (M_77 = 0.0746) is ~30x heavier than the Flexiv's.
+mean_mass_matrix_diag: [
+  1.7099, 3.0518, 1.6772, 1.2455, 0.1258, 0.1365, 0.0746,
+  0.005,
+]
+dq: [
+  20, 20, 15, 15, 5, 5, 1.5,
+  0,
+]
+kq: [
+  58.5, 32.8, 33.5, 45.2, 49.7, 45.8, 7.5,
+  0,
+]
+kq_scale: 1.0
+dq_scale: 1.0
+
+# SE(3) task impedance at tcp (body frame, Pinocchio LOCAL):
+#   xi = log(T^{-1} T_nom)^v in R^6  (nu, omega)
+#   F = K xi - D V_b,  tau = J_b^T F
+# K = diag(kt_trans I3, kt_rot I3), same pattern for D. Same values as
+# RoPhiTutorial.
+kt_trans: 200.0
+kt_rot: 5.0
+dt_trans: 30.0
+dt_rot: 0.8
+kt_trans_scale: 1.0
+kt_rot_scale: 1.0
+dt_trans_scale: 1.0
+dt_rot_scale: 1.0
+
+# The Robotiq 2F-85 is position controlled (q_des = gripper_q_des above): no
+# plant PD on it.
+kp_hand: [0.0]
+kd_hand: [0.0]
+
+do_grav_comp: true
+status_publish_stride: 20
+
+dict_joints:
+  arm:
+    joint_meas_channel: sw_franka_arm_joint_meas
+    list_joint_idx: [0, 1, 2, 3, 4, 5, 6]
+  gripper:
+    joint_meas_channel: sw_franka_gripper_joint_meas
+    list_joint_idx: [7]
+
+sub_manager:
+  name: arm_hand_joint
+  arm_joint_meas_channel: sw_franka_arm_joint_meas
+  hand_joint_meas_channel: sw_franka_gripper_joint_meas
+  gains_cmd_channel: sw_imp_gains_cmd
+  num_arm_joints: 7
+  num_hand_joints: 1
+  num_joints: 8
+
+pub_manager:
+  name: joint_ctrl_imp
+  ctrl_channel: sw_franka_arm_hand_joint_ctrl
+  status_channel: sw_imp_status

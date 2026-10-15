@@ -29,4 +29,9 @@ def get_controller(cfg_controller: DictConfig) -> BaseController:
 
         return IKQPController(cfg_controller)
 
+    if name == "impedance":
+        from controller.ImpedanceControl import ImpedanceController
+
+        return ImpedanceController(cfg_controller)
+
     raise ValueError(f"Unknown controller name: {name}.")

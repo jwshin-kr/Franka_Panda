@@ -19,7 +19,7 @@ hand_joint_meas_freq: 1000
 platform:
   name: franka_fr3
   # [arm(7), gripper(1)] = 8. Arm at [0, 0, 0, -90, 0, 90, 0] deg -> rad (the
-  # canonical Franka "ready" pose leans the elbow into wall_back of this cell);
+  # same as ~/jwjh/franka; joints 1, 2, 3, 5, 7 at their zero marks);
   # Robotiq 2F-85 open (driver angle 0 rad; 0.8 = closed). Matches the
   # controller's default_q so the sim starts at the target.
   default_q_values: [

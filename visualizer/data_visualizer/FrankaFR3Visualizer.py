@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import trimesh
 import fcl
@@ -17,6 +19,16 @@ from communication.lcm.subscriber.data_subscriber.Pose3DSubscriber import (
 from data_type.basic_types.JointMeasData import JointMeasData
 from data_type.basic_types.ColInfoData import ColInfoData
 from data_type.basic_types.Pose3DData import Pose3DData
+from data_type.basic_types.ImpStatusData import (
+    MODE_JOINT as IMP_MODE_JOINT,
+    MODE_NAME as IMP_MODE_NAME,
+    MODE_TASK as IMP_MODE_TASK,
+    ImpStatusData,
+)
+from lcm_type.ctrl.imp_gains_cmd_t import imp_gains_cmd_t
+from communication.lcm.subscriber.data_subscriber.ImpStatusSubscriber import (
+    ImpStatusSubscriber,
+)
 from utils.fcl.getter import get_fcl_geom
 
 # Translucent RGBA colors for the geom overlay.
@@ -96,8 +108,8 @@ class FrankaFR3Visualizer:
     The URDF articulates the 2F-85 linkage from the driver angle (<mimic>).
 
     Same skeleton as FlexivArmHandVisualizer: the robot (+ robot cell) URDF,
-    the collision overlay and the IK target overlay. The other controller
-    overlays come with the later tutorials.
+    the collision overlay, the IK target overlay and the impedance overlay
+    (tutorial 08: nominal / current task frames, status, gain sliders).
 
     A "Show collision geometry" checkbox (off by default) overlays the collision
     geometry EXACTLY as it comes off the wire on the ``robot_col_info`` and
@@ -131,6 +143,15 @@ class FrankaFR3Visualizer:
         self_col_pairs=None,
         col_dist_thr: float = 0.1,
         target_pose_channel: str = "",
+        impedance_status_channel: str = "",
+        impedance_gains_cmd_channel: str = "",
+        impedance_frame_axes_length: float = 0.08,
+        kq_scale: float = 1.0,
+        dq_scale: float = 1.0,
+        kt_trans_scale: float = 1.0,
+        kt_rot_scale: float = 1.0,
+        dt_trans_scale: float = 1.0,
+        dt_rot_scale: float = 1.0,
         *args,
         **kwargs,
     ):
@@ -172,9 +193,28 @@ class FrankaFR3Visualizer:
             load_meshes=True,
             load_collision_meshes=False,
         )
+        # Hidden until the first arm measurement: before that q is all zeros
+        # (arm straight up, joint 4 outside its FR3 range), not the robot.
+        self._viser_urdf.show_visual = False
+        self._have_arm_meas = False
+        self._arm_meas_channel = arm_joint_meas_channel
+        self._t_start = time.monotonic()
+        self._t_last_warn = self._t_start
 
         self._setup_collision_overlay(robot_col_info_channel, static_col_info_channel)
         self._setup_target_pose(target_pose_channel)
+        # Tutorial 08: nominal vs current task frame + gain / mode tuning.
+        self._setup_impedance_gui(
+            status_channel=impedance_status_channel,
+            gains_cmd_channel=impedance_gains_cmd_channel,
+            axes_length=float(impedance_frame_axes_length),
+            kq_scale=kq_scale,
+            dq_scale=dq_scale,
+            kt_trans_scale=kt_trans_scale,
+            kt_rot_scale=kt_rot_scale,
+            dt_trans_scale=dt_trans_scale,
+            dt_rot_scale=dt_rot_scale,
+        )
 
     def _setup_target_pose(self, target_pose_channel: str):
         import queue as _queue
@@ -463,6 +503,192 @@ class FrankaFR3Visualizer:
         )
 
     # ------------------------------------------------------------------
+    def _setup_impedance_gui(
+        self,
+        status_channel: str,
+        gains_cmd_channel: str,
+        axes_length: float,
+        kq_scale: float,
+        dq_scale: float,
+        kt_trans_scale: float,
+        kt_rot_scale: float,
+        dt_trans_scale: float,
+        dt_rot_scale: float,
+    ):
+        """Nominal vs current SE(3) frames + gain / mode tuning for impedance."""
+        import queue as _queue
+        import time as _time
+
+        self._imp_status_queue = _queue.Queue()
+        self._imp_gains_cmd_channel = str(gains_cmd_channel or "")
+        self._imp_status_md = None
+        self._imp_frame_nom = None
+        self._imp_frame_cur = None
+        self._last_imp_status = None
+        self._suppress_imp_gains_pub = False
+
+        if not status_channel:
+            return
+
+        ImpStatusSubscriber(self._lcm_instance, self._imp_status_queue).subscribe(
+            status_channel
+        )
+
+        self._imp_frame_nom = self._viser_server.scene.add_frame(
+            "/imp/T_nom",
+            axes_length=axes_length,
+            axes_radius=0.004,
+            origin_radius=0.008,
+            origin_color=(180, 80, 255),
+            visible=True,
+        )
+        self._imp_frame_cur = self._viser_server.scene.add_frame(
+            "/imp/T",
+            axes_length=axes_length * 0.85,
+            axes_radius=0.0035,
+            origin_radius=0.007,
+            origin_color=(80, 200, 120),
+            visible=True,
+        )
+
+        with self._viser_server.gui.add_folder("Impedance"):
+            self._imp_status_md = self._viser_server.gui.add_markdown(
+                "_waiting for impedance status…_"
+            )
+            self._imp_mode_dropdown = self._viser_server.gui.add_dropdown(
+                "Mode",
+                options=["joint", "task"],
+                initial_value="joint",
+            )
+
+            @self._imp_mode_dropdown.on_update
+            def _(_event):
+                if self._suppress_imp_gains_pub:
+                    return
+                self._publish_imp_gains_cmd()
+
+            self._kq_scale_slider = self._viser_server.gui.add_slider(
+                "kq_scale (joint)", min=0.0, max=3.0, step=0.05, initial_value=float(kq_scale)
+            )
+            self._dq_scale_slider = self._viser_server.gui.add_slider(
+                "dq_scale (joint)", min=0.0, max=3.0, step=0.05, initial_value=float(dq_scale)
+            )
+            self._kt_trans_slider = self._viser_server.gui.add_slider(
+                "kt_trans_scale",
+                min=0.0,
+                max=3.0,
+                step=0.05,
+                initial_value=float(kt_trans_scale),
+            )
+            self._kt_rot_slider = self._viser_server.gui.add_slider(
+                "kt_rot_scale",
+                min=0.0,
+                max=3.0,
+                step=0.05,
+                initial_value=float(kt_rot_scale),
+            )
+            self._dt_trans_slider = self._viser_server.gui.add_slider(
+                "dt_trans_scale",
+                min=0.0,
+                max=3.0,
+                step=0.05,
+                initial_value=float(dt_trans_scale),
+            )
+            self._dt_rot_slider = self._viser_server.gui.add_slider(
+                "dt_rot_scale",
+                min=0.0,
+                max=3.0,
+                step=0.05,
+                initial_value=float(dt_rot_scale),
+            )
+
+            def _on_gain(_event=None):
+                if self._suppress_imp_gains_pub:
+                    return
+                self._publish_imp_gains_cmd()
+
+            for sl in (
+                self._kq_scale_slider,
+                self._dq_scale_slider,
+                self._kt_trans_slider,
+                self._kt_rot_slider,
+                self._dt_trans_slider,
+                self._dt_rot_slider,
+            ):
+                sl.on_update(_on_gain)
+
+        # No publish here: the dropdown starts at "joint" and would switch a
+        # controller running in task mode. Gains / mode are sent on user
+        # changes, once the dropdown has synced to the controller's status.
+        self._imp_boot_t = _time.time()
+
+    def _publish_imp_gains_cmd(self) -> None:
+        if not self._imp_gains_cmd_channel:
+            return
+        if not hasattr(self, "_kq_scale_slider"):
+            return
+        if self._last_imp_status is None:
+            return  # mode dropdown not synced to the controller yet
+        import time as _time
+
+        msg = imp_gains_cmd_t()
+        msg.timestamp = float(_time.time())
+        msg.kq_scale = float(self._kq_scale_slider.value)
+        msg.dq_scale = float(self._dq_scale_slider.value)
+        msg.kt_trans_scale = float(self._kt_trans_slider.value)
+        msg.kt_rot_scale = float(self._kt_rot_slider.value)
+        msg.dt_trans_scale = float(self._dt_trans_slider.value)
+        msg.dt_rot_scale = float(self._dt_rot_slider.value)
+        mode_name = str(self._imp_mode_dropdown.value).lower()
+        msg.mode = IMP_MODE_TASK if mode_name.startswith("t") else IMP_MODE_JOINT
+        self._lcm_instance.publish(self._imp_gains_cmd_channel, msg.encode())
+
+    def _poll_imp_status(self) -> None:
+        if not hasattr(self, "_imp_status_queue"):
+            return
+        data = None
+        while not self._imp_status_queue.empty():
+            data = self._imp_status_queue.get()
+        if not isinstance(data, ImpStatusData):
+            return
+        self._last_imp_status = data
+
+        if self._imp_frame_nom is not None:
+            self._imp_frame_nom.position = tuple(data.p_nom)
+            self._imp_frame_nom.wxyz = tuple(data.quat_nom_wxyz)
+            self._imp_frame_nom.visible = True
+        if self._imp_frame_cur is not None:
+            self._imp_frame_cur.position = tuple(data.p)
+            self._imp_frame_cur.wxyz = tuple(data.quat_wxyz)
+            self._imp_frame_cur.visible = True
+
+        if self._imp_status_md is not None:
+            mode = IMP_MODE_NAME.get(int(data.mode), str(data.mode))
+            n_arm = max(1, int(data.num_arm))
+            e_q = float(np.linalg.norm(data.q[:n_arm] - data.q_nom[:n_arm]))
+            e_xi = float(np.linalg.norm(data.xi))
+            e_p = float(np.linalg.norm(data.p - data.p_nom))
+            self._imp_status_md.content = (
+                f"**mode:** `{mode}`  \n"
+                f"**||q−q_nom||_arm:** `{e_q:.4f}` rad  \n"
+                f"**||p−p_nom||:** `{e_p:.4f}` m  \n"
+                f"**||ξ|| (SE3 log):** `{e_xi:.4f}`  \n"
+                f"**ξ=(ν,ω):** `[{', '.join(f'{v:.3f}' for v in data.xi)}]`  \n"
+                f"**kq/dq scale:** `{data.kq_scale:.2f}` / `{data.dq_scale:.2f}`  \n"
+                f"**kt (trans/rot):** `{data.kt_trans:.1f}` / `{data.kt_rot:.2f}`  \n"
+                f"**dt (trans/rot):** `{data.dt_trans:.1f}` / `{data.dt_rot:.2f}`"
+            )
+
+        # Keep dropdown in sync when mode changed from the controller keyboard.
+        if hasattr(self, "_imp_mode_dropdown"):
+            want = "task" if int(data.mode) == IMP_MODE_TASK else "joint"
+            if str(self._imp_mode_dropdown.value) != want:
+                self._suppress_imp_gains_pub = True
+                try:
+                    self._imp_mode_dropdown.value = want
+                finally:
+                    self._suppress_imp_gains_pub = False
+
     def _drain_latest(self, queue):
         data = None
         while not queue.empty():
@@ -476,6 +702,16 @@ class FrankaFR3Visualizer:
         if arm is not None:
             _, q, _, _ = arm.get_data()
             self._q[: self._num_arm_joints] = q
+            if not self._have_arm_meas:
+                self._have_arm_meas = True
+                self._viser_urdf.show_visual = True
+                print(f"[Visualizer] Receiving '{self._arm_meas_channel}'")
+        elif not self._have_arm_meas and time.monotonic() - self._t_last_warn > 3.0:
+            self._t_last_warn = time.monotonic()
+            print(f"[Visualizer] No joint data on '{self._arm_meas_channel}' for "
+                  f"{self._t_last_warn - self._t_start:.0f} s. sw_* = sim (run_env.py), "
+                  "hw_* = real robot (run_hardware.py): use the *_hw.yaml "
+                  "visualizer config with the real robot.")
 
         hand = self._drain_latest(self._hand_queue)
         if hand is not None:
@@ -488,6 +724,7 @@ class FrankaFR3Visualizer:
         # Pick up any new collision geometry off the wire.
         self._poll_collision_info()
         self._poll_target_pose()
+        self._poll_imp_status()
         # Only pay the FK cost for the overlay when it's actually shown.
         if self._show_collision:
             self._update_robot_col_transforms()

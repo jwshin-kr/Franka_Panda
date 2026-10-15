@@ -42,6 +42,15 @@ class FrankaFR3VisManager(BaseVisManager):
             self_col_pairs=fcfg.get("self_col_pairs", []),
             col_dist_thr=float(fcfg.get("col_dist_thr", 0.1)),
             target_pose_channel=fcfg.get("target_pose_channel", ""),
+            impedance_status_channel=fcfg.get("impedance_status_channel", ""),
+            impedance_gains_cmd_channel=fcfg.get("impedance_gains_cmd_channel", ""),
+            impedance_frame_axes_length=float(fcfg.get("impedance_frame_axes_length", 0.08)),
+            kq_scale=float(fcfg.get("kq_scale", 1.0)),
+            dq_scale=float(fcfg.get("dq_scale", 1.0)),
+            kt_trans_scale=float(fcfg.get("kt_trans_scale", 1.0)),
+            kt_rot_scale=float(fcfg.get("kt_rot_scale", 1.0)),
+            dt_trans_scale=float(fcfg.get("dt_trans_scale", 1.0)),
+            dt_rot_scale=float(fcfg.get("dt_rot_scale", 1.0)),
         )
 
         self._list_visualizers = [vis]

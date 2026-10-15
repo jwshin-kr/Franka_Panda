@@ -16,6 +16,10 @@ Tutorials 01-03 v2 (gravity comp, stale-LCM-data fix only), e.g. on the robot:
 
     python run_controller_v2.py --config configs/franka_fr3/controllers/grav_comp_hw.yaml
 
+Tutorial 08 v2 (impedance, stale-LCM-data fix only) reuses the original yaml:
+
+    python run_controller_v2.py --config configs/franka_fr3/controllers/impedance.yaml --name impedance_v2
+
 Tutorial 06 v2 (IK QP, stale-LCM-data fix only) reuses the original yaml:
 
     python run_controller_v2.py --config configs/franka_fr3/controllers/ik_qp.yaml --name ik_qp_v2
@@ -46,6 +50,10 @@ def build_controller(cfg: DictConfig):
         from controller.GravCompControl_v2 import GravCompControllerV2
 
         return GravCompControllerV2(cfg)
+    if cfg["name"] == "impedance_v2":
+        from controller.ImpedanceControl_v2 import ImpedanceControllerV2
+
+        return ImpedanceControllerV2(cfg)
     if cfg["name"] == "ik_qp_v2":
         from controller.IKQPControl_v2 import IKQPControllerV2
 

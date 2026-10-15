@@ -43,15 +43,18 @@ use_position_pd: false   # velocity tracking with velocity_control_D_gain
 # friction cannot stop it short; at the target the arm is held at q_ref.
 track_reference: true
 ref_pos_tol: 0.0002      # m, replaces pos_tol (5 mm) in v2
-ref_vel_gain: 6.0        # 1/s, replaces vel_gain (3) in v2: faster through the joint friction near the target
-ref_qd_max_acc: 5.0      # rad/s^2, smooths qd_des for the stiff joint impedance
+ref_vel_gain: 10.0       # 1/s, replaces vel_gain (3) in v2: fast approach, through the joint friction
+ref_v_max: 0.3           # m/s, replaces v_max (0.15) in v2: tip speed cap
+ref_qd_max_acc: 6.0      # rad/s^2, smooths qd_des for the stiff joint impedance (keeps the torque rate < 1000 Nm/s)
 ref_max_error: 0.05      # rad, |q_ref - q| clamp (anti-windup, bounds the spring torque)
 ref_kp: [
   200.0, 200.0, 200.0, 200.0, 100.0, 60.0, 30.0,
   0.0,
 ]
+# ref_kd ~ 2 sqrt(ref_kp * M_jj) (critical damping with mean_mass_matrix_diag):
+# with less damping the arm swings past the reference on fast moves.
 ref_kd: [
-  25.0, 25.0, 25.0, 25.0, 10.0, 8.0, 4.0,
+  40.0, 50.0, 40.0, 35.0, 8.0, 6.0, 3.0,
   0.0,
 ]
 

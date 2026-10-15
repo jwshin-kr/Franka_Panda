@@ -6,7 +6,7 @@
 
 ## 실행
 
-터미널 3개에서 저장소 루트 기준으로 env → controller → visualizer 순서로 실행합니다.
+터미널 3개에서 저장소 루트 기준으로 env → controller → visualizer 순서로 실행합니다. **모든 모드의 실행 명령(sim + 실제 로봇)은 [CMDS.md](CMDS.md)에 정리되어 있습니다.**
 
 ```bash
 conda activate rophi
@@ -28,7 +28,24 @@ python run_visualizer.py --config configs/visualizer/franka_fr3/collision.yaml
 python run_env.py --config configs/franka_fr3/env/collision.yaml
 python run_controller.py --config configs/franka_fr3/controllers/ik_qp.yaml
 python run_visualizer.py --config configs/visualizer/franka_fr3/ik_qp.yaml
+
+# 08 impedance control (controller 터미널에서 j = joint, t = task SE(3); RoPhiTutorial tutorial 08 v2)
+python run_env.py --config configs/franka_fr3/env/default.yaml
+python run_controller_v2.py --config configs/franka_fr3/controllers/impedance.yaml --name impedance_v2
+python run_visualizer.py --config configs/visualizer/franka_fr3/impedance.yaml
 ```
+
+08은 v2(`ImpedanceControl_v2.py`)만 쓰세요. 원본 controller는 측정값 backlog 때문에 sim에서도 발산했습니다(관절 속도 49 rad/s).
+v2 controller는 RoPhiTutorial의 `ImpedanceControl_v2.py`와 같습니다(오래된 LCM 데이터 수정만; FR3용 변경은 `ImpedanceControl.py`의 task frame `tcp`와 Robotiq set-point). 실제 로봇:
+
+```bash
+python run_hardware.py --config configs/franka_fr3/hardware/default.yaml
+python run_controller_v2.py --config configs/franka_fr3/controllers/impedance_hw.yaml
+python run_visualizer.py --config configs/visualizer/franka_fr3/impedance_hw.yaml
+```
+
+실제 로봇은 visualizer도 `*_hw.yaml`(hw_ 채널)을 써야 합니다. sim 설정(sw_ 채널)으로 띄우면 로봇이 보이지 않고 터미널에 경고가 나옵니다.
+`impedance_hw.yaml`은 `impedance.yaml`과 게인이 같습니다(RoPhiTutorial 방식: kq = dq² / (4 M), task 200 / 5 / 30 / 0.8). 너무 뻣뻣하면 Viser의 `kq_scale` / `dq_scale` 슬라이더로 낮추세요.
 
 ### v2 (05·06 문제 수정판)
 
@@ -145,8 +162,7 @@ factory(`get_env`, `get_controller`, ...)에는 튜토리얼 06까지 쓰는 이
 
 ## 모델 메모
 
-- **기본 자세**: 팔 `[0, 0, 0, -90°, 0, 90°, 0°]`(joint7 = 0: Robotiq이 flange에 회전 없이 붙어 있어 손가락이 셀 축과 나란함, DROID home과 같음), 그리퍼 열림 (driver 각도 0).
-  Franka의 표준 ready 자세 `[0, -45°, 0, -135°, 0, 90°, 45°]`는 이 셀에서 link3(팔꿈치)가 `wall_back`에 닿습니다.
+- **기본 자세**: 팔 `[0, 0, 0, -90°, 0, 90°, 0°]` (~/jwjh/franka와 같음; joint 1, 2, 3, 5, 7이 FR3의 0점 표시(화살표)에 맞춰짐, Robotiq은 flange에 0°로 붙어 손가락이 셀 축과 나란함), 그리퍼 열림 (driver 각도 0).
 - **FR3 팔** (`fr3_robot.xml`, Menagerie franka_fr3): 링크/조인트 이름은 `link0..link7`, `joint1..joint7`(`fr3_` 접두어 없음).
   FR3 관절 범위(예: joint6 0.5445..4.5169 rad), 관성, armature(0.195 / 0.074), damping 0.21, frictionloss(1.137 .. 0.248 Nm)를
   Menagerie 값 그대로 씁니다. FR3는 Panda와 기구학(DH)은 같지만 관성·관절 범위·형상이 다릅니다.
