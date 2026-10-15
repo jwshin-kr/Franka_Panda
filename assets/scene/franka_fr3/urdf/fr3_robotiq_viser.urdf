@@ -1,0 +1,617 @@
+<?xml version="1.0" ?>
+<!-- Franka Research 3 arm + Robotiq 2F-85 gripper (the DROID setup), for
+     Viser (visualization). Written by make_fr3_robotiq_urdf.py from ../fr3_robot.xml (arm:
+     Menagerie franka_fr3, Apache-2.0; gripper: Menagerie robotiq_2f85,
+     BSD-2-Clause): same names, kinematics and inertias, so
+     pin.computeGeneralizedGravity matches MuJoCo's qfrc_bias. Gripper:
+     linkage follows the right driver
+     through <mimic>.
+     Do not edit by hand: edit ../fr3_robot.xml / _world_cell.urdf.in and rerun
+     make_fr3_robotiq_urdf.py.
+     Actuated joint order: joint1..joint7, robotiq_right_driver_joint. -->
+<robot name="franka_fr3">
+  <link name="world" />
+  <joint name="base_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="world"/>
+    <child link="link0"/>
+  </joint>
+  <link name="link0">
+    <inertial>
+      <origin xyz="-0.0172 0.0004 0.0745" rpy="0 0 0"/>
+      <mass value="2.3966"/>
+      <inertia ixx="0.009" ixy="0" ixz="0" iyy="0.0115" iyz="0" izz="0.0085"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link0_0.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="0.200000003 0.200000003 0.200000003 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link0_1.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="1 1 1 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link0_2.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="1 1 1 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link0_3.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="1 1 1 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link0_4.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="1 1 1 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link0_5.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="1 0.0722720027 0.0395460017 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link0_6.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="0.200000003 0.200000003 0.200000003 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link0.stl" scale="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <link name="link1">
+    <inertial>
+      <origin xyz="4.128e-07 -0.0181251 -0.0386036" rpy="0 0 0"/>
+      <mass value="2.92747"/>
+      <inertia ixx="0.0239273" ixy="1.33173e-05" ixz="-0.000114051" iyy="0.0224821" iyz="-0.00199503" izz="0.0063501"/>
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link1.stl" scale="1 1 1"/></geometry>
+    </collision>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link1.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="1 1 1 1"/></material>
+    </visual>
+  </link>
+  <joint name="joint1" type="revolute">
+    <origin xyz="0 0 0.333" rpy="0 0 0"/>
+    <parent link="link0"/>
+    <child link="link1"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.7437" upper="2.7437" effort="87" velocity="2.62"/>
+  </joint>
+  <link name="link2">
+    <inertial>
+      <origin xyz="0.00318289 -0.0743222 0.00881461" rpy="0 0 0"/>
+      <mass value="2.93554"/>
+      <inertia ixx="0.0419389" ixy="0.000202601" ixz="0.00407778" iyy="0.0251452" iyz="-0.00422523" izz="0.0617021"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link2.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="1 1 1 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link2.stl" scale="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint2" type="revolute">
+    <origin xyz="0 0 0" rpy="-1.57079633 0 0"/>
+    <parent link="link1"/>
+    <child link="link2"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.7837" upper="1.7837" effort="87" velocity="2.62"/>
+  </joint>
+  <link name="link3">
+    <inertial>
+      <origin xyz="0.0407016 -0.00482006 -0.0289731" rpy="0 0 0"/>
+      <mass value="2.2449"/>
+      <inertia ixx="0.0241014" ixy="0.00240468" ixz="-0.00285627" iyy="0.0197405" iyz="-0.00210421" izz="0.0190445"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link3_0.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="1 1 1 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link3_1.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="0.200000003 0.200000003 0.200000003 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link3.stl" scale="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint3" type="revolute">
+    <origin xyz="0 -0.316 0" rpy="1.57079633 0 0"/>
+    <parent link="link2"/>
+    <child link="link3"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.9007" upper="2.9007" effort="87" velocity="2.62"/>
+  </joint>
+  <link name="link4">
+    <inertial>
+      <origin xyz="-0.0459101 0.0630493 -0.00851879" rpy="0 0 0"/>
+      <mass value="2.6156"/>
+      <inertia ixx="0.03453" ixy="0.0132255" ixz="0.0101514" iyy="0.0288817" iyz="-0.000976307" izz="0.0412547"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link4_0.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="1 1 1 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link4_1.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="0.200000003 0.200000003 0.200000003 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link4.stl" scale="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint4" type="revolute">
+    <origin xyz="0.0825 0 0" rpy="1.57079633 0 0"/>
+    <parent link="link3"/>
+    <child link="link4"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.0421" upper="-0.1518" effort="87" velocity="2.62"/>
+  </joint>
+  <link name="link5">
+    <inertial>
+      <origin xyz="-0.00160396 0.0292536 -0.0972966" rpy="0 0 0"/>
+      <mass value="2.32712"/>
+      <inertia ixx="0.0516103" ixy="-0.00571518" ixz="-0.00356732" iyy="0.0478773" iyz="0.010674" izz="0.0164237"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link5_0.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="1 1 1 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link5_1.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="1 1 1 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link5_2.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="0.200000003 0.200000003 0.200000003 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link5.stl" scale="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint5" type="revolute">
+    <origin xyz="-0.0825 0.384 0" rpy="-1.57079633 0 0"/>
+    <parent link="link4"/>
+    <child link="link5"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.8065" upper="2.8065" effort="12" velocity="5.26"/>
+  </joint>
+  <link name="link6">
+    <inertial>
+      <origin xyz="0.0597131 -0.0410295 -0.0101693" rpy="0 0 0"/>
+      <mass value="1.81704"/>
+      <inertia ixx="0.00541232" ixy="0.00619345" ixz="0.00142192" iyy="0.0140583" iyz="-0.00131407" izz="0.0160808"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link6_0.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="0.102241002 0.571124971 0.102242 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link6_1.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="1 1 1 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link6_2.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="1 1 1 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link6_3.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="0.863156021 0.863156021 0.863156974 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link6_4.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="0.520995975 0.00802300032 0.0137019996 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link6_5.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="1 1 1 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link6_6.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="0.200000003 0.200000003 0.200000003 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link6_7.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="0.0241570007 0.44520101 0.737910986 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link6.stl" scale="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint6" type="revolute">
+    <origin xyz="0 0 0" rpy="1.57079633 0 0"/>
+    <parent link="link5"/>
+    <child link="link6"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0.5445" upper="4.5169" effort="12" velocity="4.18"/>
+  </joint>
+  <link name="link7">
+    <inertial>
+      <origin xyz="0.00452258 0.00862619 -0.0161633" rpy="0 0 0"/>
+      <mass value="0.627143"/>
+      <inertia ixx="0.000210924" ixy="-2.4333e-05" ixz="4.56448e-05" iyy="0.000177186" iyz="8.74408e-05" izz="5.9932e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link7_0.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="0.200000003 0.200000003 0.200000003 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link7_1.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="1 1 1 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link7_2.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="1 1 1 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link7_3.obj" scale="1 1 1"/></geometry>
+      <material name=""><color rgba="0.200000003 0.200000003 0.200000003 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../fr3/link7.stl" scale="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint7" type="revolute">
+    <origin xyz="0.088 0 0" rpy="1.57079633 0 0"/>
+    <parent link="link6"/>
+    <child link="link7"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.0159" upper="3.0159" effort="12" velocity="5.26"/>
+  </joint>
+  <link name="flange">
+  </link>
+  <joint name="link7_to_flange" type="fixed">
+    <origin xyz="0 0 0.107" rpy="0 0 0"/>
+    <parent link="link7"/>
+    <child link="flange"/>
+  </joint>
+  <link name="gripper">
+  </link>
+  <joint name="flange_to_gripper" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="flange"/>
+    <child link="gripper"/>
+  </joint>
+  <link name="tcp">
+  </link>
+  <joint name="gripper_to_tcp" type="fixed">
+    <origin xyz="0 0 0.15" rpy="0 0 0"/>
+    <parent link="gripper"/>
+    <child link="tcp"/>
+  </joint>
+  <link name="robotiq_base_mount">
+    <inertial>
+      <origin xyz="0 0 0.004" rpy="0 0 0"/>
+      <mass value="0.025"/>
+      <inertia ixx="2e-05" ixy="0" ixz="0" iyy="2e-05" iyz="0" izz="3e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/base_mount.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name=""><color rgba="0.149000004 0.149000004 0.149000004 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/base_mount.stl" scale="0.001 0.001 0.001"/></geometry>
+    </collision>
+  </link>
+  <joint name="gripper_to_robotiq_base_mount" type="fixed">
+    <origin xyz="0 0 0.007" rpy="0 0 1.57079633"/>
+    <parent link="gripper"/>
+    <child link="robotiq_base_mount"/>
+  </joint>
+  <link name="robotiq_base">
+    <inertial>
+      <origin xyz="0 -2.70394e-05 0.0354675" rpy="0 0 0"/>
+      <mass value="0.777441"/>
+      <inertia ixx="0.000260285" ixy="0" ixz="0" iyy="0.00022538" iyz="-2.22158e-07" izz="0.000152709"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/base.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name=""><color rgba="0.149000004 0.149000004 0.149000004 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/base.stl" scale="0.001 0.001 0.001"/></geometry>
+    </collision>
+  </link>
+  <joint name="robotiq_base_mount_to_robotiq_base" type="fixed">
+    <origin xyz="0 0 0.0038" rpy="0 0 -1.57079633"/>
+    <parent link="robotiq_base_mount"/>
+    <child link="robotiq_base"/>
+  </joint>
+  <link name="robotiq_right_driver">
+    <inertial>
+      <origin xyz="2.96931e-12 0.0177547 0.00107314" rpy="0 0 0"/>
+      <mass value="0.00899563"/>
+      <inertia ixx="1.72352e-06" ixy="0" ixz="0" iyy="3.28615e-07" iyz="-9.19898e-08" izz="1.60245e-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/driver.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name=""><color rgba="0.462700009 0.462700009 0.462700009 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/driver.stl" scale="0.001 0.001 0.001"/></geometry>
+    </collision>
+  </link>
+  <joint name="robotiq_right_driver_joint" type="revolute">
+    <origin xyz="0 0.0306011 0.054904" rpy="0 0 0"/>
+    <parent link="robotiq_base"/>
+    <child link="robotiq_right_driver"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="0" upper="0.8" effort="10" velocity="2"/>
+  </joint>
+  <link name="robotiq_right_coupler">
+    <inertial>
+      <origin xyz="0 0.00301209 0.0232175" rpy="0 0 0"/>
+      <mass value="0.0140974"/>
+      <inertia ixx="3.52216e-06" ixy="0" ixz="0" iyy="4.10785e-06" iyz="-4.17789e-07" izz="9.42343e-07"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/coupler.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name=""><color rgba="0.149000004 0.149000004 0.149000004 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/coupler.stl" scale="0.001 0.001 0.001"/></geometry>
+    </collision>
+  </link>
+  <joint name="robotiq_right_coupler_joint" type="fixed">
+    <origin xyz="0 0.0315 -0.0041" rpy="0 0 0"/>
+    <parent link="robotiq_right_driver"/>
+    <child link="robotiq_right_coupler"/>
+  </joint>
+  <link name="robotiq_right_spring_link">
+    <inertial>
+      <origin xyz="-8.65005e-09 0.0181624 0.0212658" rpy="0 0 0"/>
+      <mass value="0.0221642"/>
+      <inertia ixx="6.71733e-06" ixy="0" ixz="0" iyy="6.29906e-06" iyz="-3.12563e-06" izz="5.30878e-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/spring_link.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name=""><color rgba="0.149000004 0.149000004 0.149000004 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/spring_link.stl" scale="0.001 0.001 0.001"/></geometry>
+    </collision>
+  </link>
+  <joint name="robotiq_right_spring_link_joint" type="revolute">
+    <origin xyz="0 0.0132 0.0609" rpy="0 0 0"/>
+    <parent link="robotiq_base"/>
+    <child link="robotiq_right_spring_link"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.296706" upper="0.8" effort="10" velocity="2"/>
+    <mimic joint="robotiq_right_driver_joint" multiplier="0.9996" offset="0"/>
+  </joint>
+  <link name="robotiq_right_follower">
+    <inertial>
+      <origin xyz="0 0.006954 0.0059786" rpy="0 0 0"/>
+      <mass value="0.0125222"/>
+      <inertia ixx="2.67415e-06" ixy="0" ixz="0" iyy="2.26149e-06" iyz="5.67995e-07" izz="7.96443e-07"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0.018 -0.0065" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/follower.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name=""><color rgba="0.149000004 0.149000004 0.149000004 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0.018 -0.0065" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/follower.stl" scale="0.001 0.001 0.001"/></geometry>
+    </collision>
+  </link>
+  <joint name="robotiq_right_follower_joint" type="revolute">
+    <origin xyz="0 0.037 0.044" rpy="0 0 0"/>
+    <parent link="robotiq_right_spring_link"/>
+    <child link="robotiq_right_follower"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.872664" upper="0.872664" effort="10" velocity="2"/>
+    <mimic joint="robotiq_right_driver_joint" multiplier="-0.9628" offset="0"/>
+  </joint>
+  <link name="robotiq_right_pad">
+    <inertial>
+      <origin xyz="0 -0.0025 0.0185" rpy="0 0 0"/>
+      <mass value="0.0035"/>
+      <inertia ixx="3.64583e-07" ixy="0" ixz="0" iyy="4.73958e-07" iyz="0" izz="1.23958e-07"/>
+    </inertial>
+    <collision>
+      <origin xyz="0 -0.0026 0.028125" rpy="0 0 0"/>
+      <geometry><box size="0.022 0.008 0.01875"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 -0.0026 0.009375" rpy="0 0 0"/>
+      <geometry><box size="0.022 0.008 0.01875"/></geometry>
+    </collision>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/pad.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name=""><color rgba="0.5 0.5 0.5 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/silicone_pad.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name=""><color rgba="0.149000004 0.149000004 0.149000004 1"/></material>
+    </visual>
+  </link>
+  <joint name="robotiq_right_follower_to_robotiq_right_pad" type="fixed">
+    <origin xyz="0 -0.0009 0.00702" rpy="0 0 0"/>
+    <parent link="robotiq_right_follower"/>
+    <child link="robotiq_right_pad"/>
+  </joint>
+  <link name="robotiq_left_driver">
+    <inertial>
+      <origin xyz="0 0.0177547 0.00107314" rpy="0 0 0"/>
+      <mass value="0.00899563"/>
+      <inertia ixx="1.72352e-06" ixy="0" ixz="0" iyy="3.28615e-07" iyz="-9.19898e-08" izz="1.60245e-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/driver.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name=""><color rgba="0.462700009 0.462700009 0.462700009 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/driver.stl" scale="0.001 0.001 0.001"/></geometry>
+    </collision>
+  </link>
+  <joint name="robotiq_left_driver_joint" type="revolute">
+    <origin xyz="0 -0.0306011 0.054904" rpy="0 0 3.14159265"/>
+    <parent link="robotiq_base"/>
+    <child link="robotiq_left_driver"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="0" upper="0.8" effort="10" velocity="2"/>
+    <mimic joint="robotiq_right_driver_joint" multiplier="1.0" offset="0"/>
+  </joint>
+  <link name="robotiq_left_coupler">
+    <inertial>
+      <origin xyz="0 0.00301209 0.0232175" rpy="0 0 0"/>
+      <mass value="0.0140974"/>
+      <inertia ixx="3.52216e-06" ixy="0" ixz="0" iyy="4.10785e-06" iyz="-4.17789e-07" izz="9.42343e-07"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/coupler.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name=""><color rgba="0.149000004 0.149000004 0.149000004 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/coupler.stl" scale="0.001 0.001 0.001"/></geometry>
+    </collision>
+  </link>
+  <joint name="robotiq_left_coupler_joint" type="fixed">
+    <origin xyz="0 0.0315 -0.0041" rpy="0 0 0"/>
+    <parent link="robotiq_left_driver"/>
+    <child link="robotiq_left_coupler"/>
+  </joint>
+  <link name="robotiq_left_spring_link">
+    <inertial>
+      <origin xyz="-8.65005e-09 0.0181624 0.0212658" rpy="0 0 0"/>
+      <mass value="0.0221642"/>
+      <inertia ixx="6.71733e-06" ixy="0" ixz="0" iyy="6.29906e-06" iyz="-3.12563e-06" izz="5.30878e-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/spring_link.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name=""><color rgba="0.149000004 0.149000004 0.149000004 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/spring_link.stl" scale="0.001 0.001 0.001"/></geometry>
+    </collision>
+  </link>
+  <joint name="robotiq_left_spring_link_joint" type="revolute">
+    <origin xyz="0 -0.0132 0.0609" rpy="0 0 3.14159265"/>
+    <parent link="robotiq_base"/>
+    <child link="robotiq_left_spring_link"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.296706" upper="0.8" effort="10" velocity="2"/>
+    <mimic joint="robotiq_right_driver_joint" multiplier="0.9997" offset="0"/>
+  </joint>
+  <link name="robotiq_left_follower">
+    <inertial>
+      <origin xyz="0 0.006954 0.0059786" rpy="0 0 0"/>
+      <mass value="0.0125222"/>
+      <inertia ixx="2.67415e-06" ixy="0" ixz="0" iyy="2.26149e-06" iyz="5.67995e-07" izz="7.96443e-07"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0.018 -0.0065" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/follower.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name=""><color rgba="0.149000004 0.149000004 0.149000004 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0.018 -0.0065" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/follower.stl" scale="0.001 0.001 0.001"/></geometry>
+    </collision>
+  </link>
+  <joint name="robotiq_left_follower_joint" type="revolute">
+    <origin xyz="0 0.037 0.044" rpy="0 0 0"/>
+    <parent link="robotiq_left_spring_link"/>
+    <child link="robotiq_left_follower"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.872664" upper="0.872664" effort="10" velocity="2"/>
+    <mimic joint="robotiq_right_driver_joint" multiplier="-0.9626" offset="0"/>
+  </joint>
+  <link name="robotiq_left_pad">
+    <inertial>
+      <origin xyz="0 -0.0025 0.0185" rpy="0 0 0"/>
+      <mass value="0.0035"/>
+      <inertia ixx="3.64583e-07" ixy="0" ixz="0" iyy="4.73958e-07" iyz="0" izz="1.23958e-07"/>
+    </inertial>
+    <collision>
+      <origin xyz="0 -0.0026 0.028125" rpy="0 0 0"/>
+      <geometry><box size="0.022 0.008 0.01875"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 -0.0026 0.009375" rpy="0 0 0"/>
+      <geometry><box size="0.022 0.008 0.01875"/></geometry>
+    </collision>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/pad.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name=""><color rgba="0.5 0.5 0.5 1"/></material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../robotiq/silicone_pad.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name=""><color rgba="0.149000004 0.149000004 0.149000004 1"/></material>
+    </visual>
+  </link>
+  <joint name="robotiq_left_follower_to_robotiq_left_pad" type="fixed">
+    <origin xyz="0 -0.0009 0.00702" rpy="0 0 0"/>
+    <parent link="robotiq_left_follower"/>
+    <child link="robotiq_left_pad"/>
+  </joint>
+  <joint name="world_to_enclosure" type="fixed">
+    <parent link="world" />
+    <child link="enclosure" />
+    <origin rpy="1.570000124 0 0" xyz="-0.293 0.482 -0.091" />
+  </joint>
+  <link name="enclosure">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="../cell/enclosure_decimated.STL" scale="0.001 0.001 0.001" />
+      </geometry>
+    </visual>
+  </link>
+</robot>

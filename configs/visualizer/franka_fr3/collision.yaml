@@ -1,0 +1,62 @@
+name: franka_fr3
+vis_freq: 30
+
+franka_fr3:
+  # Channels the sim env publishes joint_meas_t on (SimFrankaFR3).
+  arm_joint_meas_channel: sw_franka_arm_joint_meas
+  hand_joint_meas_channel: sw_franka_gripper_joint_meas
+  num_arm_joints: 7
+  num_hand_joints: 1
+
+  # FR3 arm + Robotiq 2F-85 + robot cell URDF (gripper linkage articulated
+  # via <mimic>). Uses relative mesh paths, so it loads directly.
+  urdf_path: assets/scene/franka_fr3/urdf/fr3_robotiq_viser.urdf
+  # Optional yourdfpy mesh_dir override; leave blank to use the URDF's own paths.
+  mesh_dir: ""
+
+  # Collision-info channels for the "Show collision geometry" overlay and the
+  # "Show collision distances" dashed lines. Subscribed off the wire so they
+  # match EXACTLY what the collision-aware controller receives (published by
+  # the franka_fr3_col env). Leave blank to disable (e.g. non-col env).
+  robot_col_info_channel: sw_franka_arm_hand_robot_col_info
+  static_col_info_channel: sw_franka_arm_hand_static_col_info
+
+  # Draw dashed nearest-point lines when FCL distance < this threshold (m).
+  # Red = robot <-> environment; orange = self-collision.
+  col_dist_thr: 0.10
+
+  # link <-> obstacle pairs (same set as col_aware_grav_comp).
+  col_pairs:
+    - ["link2", "wall_back"]
+    - ["link2", "wall_left"]
+    - ["link3", "wall_back"]
+    - ["link3", "wall_left"]
+    - ["link3", "floor"]
+    - ["link4", "wall_back"]
+    - ["link4", "wall_left"]
+    - ["link4", "floor"]
+    - ["link5", "wall_back"]
+    - ["link5", "wall_left"]
+    - ["link5", "floor"]
+    - ["link6", "wall_back"]
+    - ["link6", "wall_left"]
+    - ["link6", "floor"]
+    - ["link7", "wall_back"]
+    - ["link7", "wall_left"]
+    - ["link7", "floor"]
+    - ["gripper", "wall_back"]
+    - ["gripper", "wall_left"]
+    - ["gripper", "floor"]
+
+  # Non-adjacent robot link pairs (self-collision).
+  self_col_pairs:
+    - ["gripper", "link1"]
+    - ["gripper", "link2"]
+    - ["gripper", "link3"]
+    - ["link7", "link1"]
+    - ["link7", "link2"]
+    - ["link7", "link3"]
+    - ["link6", "link1"]
+    - ["link6", "link2"]
+    - ["link5", "link1"]
+    - ["link5", "link2"]

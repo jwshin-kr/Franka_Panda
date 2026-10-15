@@ -2,6 +2,7 @@
 import time
 from queue import Queue
 
+import numpy as np
 from omegaconf import DictConfig
 
 from utils.mode import EnvMode
@@ -52,6 +53,16 @@ class BaseController:
         # self._freq_check_cur_ctrl_t = 0
         # This is the same unit as _freq_check_cur_ctrl_t, but record the last time the controller was called.
         # self._freq_check_last_ctrl_t = 0
+
+        # Position-controlled gripper (Robotiq 2F-85): its q_des slot is a
+        # set-point (driver angle, rad: 0 = open .. 0.8 = closed) that the sim /
+        # hardware servo tracks, so it must not follow the measurement (that
+        # ratchets: every small spring / contact motion becomes the new target).
+        self._gripper_joint_idx = list(config.get("gripper_joint_idx", []))
+        self._gripper_q_des = np.asarray(
+            config.get("gripper_q_des", [0.0] * len(self._gripper_joint_idx)),
+            dtype=np.float64,
+        )
 
         self._ctrl_dt = 1.0 / self._ctrl_freq
         self._pause = False
@@ -203,6 +214,12 @@ class BaseController:
             self._finished = True
         else:
             print(f"[Controller] Key pressed: {key}")
+
+    def _with_gripper_set_point(self, q_des):
+        """Copy of q_des with the gripper slot(s) set to the gripper set-point."""
+        q_des = np.array(q_des, dtype=np.float64, copy=True)
+        q_des[self._gripper_joint_idx] = self._gripper_q_des
+        return q_des
 
     def _update_time(self):
         """

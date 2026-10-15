@@ -1,0 +1,53 @@
+# C++ Franka bridge config (communication/franka). Spawned by
+# HardwareFrankaFR3 with this file as its only argument.
+name: franka_fr3_arm
+
+robot:
+  # FR3 control box (FCI), DROID cell. Robot system 5.8.1 -> libfranka >= 0.15.
+  robot_ip: 192.168.0.113
+  # true: no robot connection, the measured state echoes the command. Set false
+  # only for the real robot.
+  mock_mode: false
+  control_mode: joint_torque
+  # The controller's tau_ff already contains g(q) (Pinocchio), so the bridge
+  # removes the gravity the robot adds on its own.
+  enable_gravity_comp: false
+  # enforce: needs a PREEMPT_RT kernel. ignore: run on a generic kernel (this
+  # workstation's kernel is not PREEMPT_RT; libfranka still aborts the control
+  # loop, and the robot stops, if packets are missed).
+  realtime_config: ignore
+  # On start, before torque control: move to default_hold_q (below) with the
+  # robot's own joint position controller, smooth (quintic), peak joint speed
+  # move_to_start_max_vel rad/s. Keep the user stop in hand when starting.
+  move_to_start: true
+  move_to_start_max_vel: 0.3
+  limit_rate: true
+  cutoff_frequency: 100.0
+  # Upper thresholds trigger a reflex (robot stops, bridge exits).
+  collision_behavior:
+    lower_torque_thresholds: [300.0, 300.0, 300.0, 300.0, 300.0, 300.0, 300.0]
+    upper_torque_thresholds: [300.0, 300.0, 300.0, 300.0, 300.0, 300.0, 300.0]
+    lower_force_thresholds: [300.0, 300.0, 300.0, 300.0, 300.0, 300.0]
+    upper_force_thresholds: [300.0, 300.0, 300.0, 300.0, 300.0, 300.0]
+
+loop_hz: 1000
+# Commands older than this end the torque control loop (robot holds in Idle).
+command_timeout_s: 0.05
+
+lcm:
+  # unified [arm(7), gripper(1)] command; the bridge takes the arm slice
+  ctrl_channel: hw_franka_arm_hand_joint_ctrl
+  joint_meas_channel: hw_franka_arm_joint_meas
+
+mapping:
+  ctrl_joint_offset: 0
+  num_arm_joints: 7
+  joint_names: [joint1, joint2, joint3, joint4, joint5, joint6, joint7]
+  command_sign: [1, 1, 1, 1, 1, 1, 1]
+  measurement_sign: [1, 1, 1, 1, 1, 1, 1]
+
+# Start pose (move_to_start) and mock-mode initial state: the sim / controller
+# default pose [0, 0, 0, -90, 0, 90, 0] deg.
+default_hold_q: [0.0, 0.0, 0.0, -1.5707963, 0.0, 1.5707963, 0.0]
+hold_kp: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+hold_kd: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

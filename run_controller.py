@@ -40,13 +40,16 @@ def run_controller(cfg_controller: DictConfig):
     # this will spin off a thread for the publisher
     pub.start()
 
-    controller.initialize()
-    controller.start()
-
-    # this will safely terminate the thread
-    sub.stop()
-    pub.stop()
-    controller.stop()
+    # Stop the LCM threads also when initialize() fails or is interrupted
+    # (e.g. Ctrl-C while waiting for collision info); otherwise the process
+    # hangs on exit.
+    try:
+        controller.initialize()
+        controller.start()
+    finally:
+        sub.stop()
+        pub.stop()
+        controller.stop()
 
 
 if __name__ == "__main__":

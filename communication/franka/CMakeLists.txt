@@ -8,7 +8,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Threads REQUIRED)
 find_package(yaml-cpp REQUIRED)
-# libfranka (Panda / system 4.x -> 0.9.x). Built from source, point CMake at
+# libfranka >= 0.15 for the FR3 (system >= 5.7.2), e.g. 0.17.0 for system 5.8.1.
+# Built from source, point CMake at
 # it with -DFranka_DIR=<libfranka>/build.
 find_package(Franka REQUIRED)
 

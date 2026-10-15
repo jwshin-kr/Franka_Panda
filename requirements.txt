@@ -26,3 +26,6 @@ python-fcl
 
 # optimization
 osqp
+
+# Robotiq 2F-85 (Modbus RTU over its USB adapter, real robot only)
+pyserial

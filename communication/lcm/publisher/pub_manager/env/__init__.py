@@ -14,13 +14,13 @@ def get_env_pub_manager(cfg_pub_manager: DictConfig) -> BasePubManager:
         return BasePubManager(**cfg_pub_manager)
 
     elif name == "franka_arm_hand":
-        from communication.lcm.publisher.pub_manager.env.franka_panda.FrankaArmHandPubManager import (
+        from communication.lcm.publisher.pub_manager.env.franka_fr3.FrankaArmHandPubManager import (
             FrankaArmHandPubManager,
         )
 
         return FrankaArmHandPubManager(**cfg_pub_manager)
     elif name == "franka_arm_hand_col_info":
-        from communication.lcm.publisher.pub_manager.env.franka_panda.FrankaArmHandColInfoPubManager import (
+        from communication.lcm.publisher.pub_manager.env.franka_fr3.FrankaArmHandColInfoPubManager import (
             FrankaArmHandColInfoPubManager,
         )
 

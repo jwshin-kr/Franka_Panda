@@ -125,9 +125,14 @@ class CollisionAwareGravCompController(BaseController):
         print("[ColAwareGravComp] Initialized with FCL geoms.")
 
     def _wait_for_col_geoms(
-        self, que: Queue, label: str, timeout_s: float = 2.0
+        self, que: Queue, label: str, timeout_s: float | None = None
     ) -> dict:
+        """Block until the first ColInfo arrives on ``que`` (published by the
+        franka_fr3_col env in sim, by run_hardware.py on the robot). Waits as
+        long as it takes (``timeout_s=None``), reminding every 2 s; Ctrl-C
+        aborts."""
         tic = time.time()
+        last_note = tic
         while True:
             if not que.empty():
                 msg = que.get()
@@ -143,9 +148,16 @@ class CollisionAwareGravCompController(BaseController):
                     }
                     for name, col_geom in dict_col_info.items()
                 }
-            if time.time() - tic > timeout_s:
+            if timeout_s is not None and time.time() - tic > timeout_s:
                 raise TimeoutError(
                     f"Timeout waiting for {label} collision information."
+                )
+            if time.time() - last_note > 2.0:
+                last_note = time.time()
+                print(
+                    f"[Controller] Waiting for {label} collision information "
+                    f"({time.time() - tic:.0f} s). Is the collision env "
+                    f"(sim) / run_hardware.py (robot) running?"
                 )
             time.sleep(0.001)
 
@@ -442,6 +454,7 @@ class CollisionAwareGravCompController(BaseController):
             kp = self._kp
             kd = self._kd
 
+        q_des = self._with_gripper_set_point(q_des)
         cmd = JointCtrlData(num_joints=self._num_joints)
         cmd.set_data(self._cur_time, q_des, qd_des, tau_ff, kp, kd)
         self.ctrl_pub_que.put(cmd)

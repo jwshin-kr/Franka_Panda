@@ -1,33 +1,33 @@
-# RoPhiTutorial — Franka Emika Panda (튜토리얼 01–06)
+# RoPhiTutorial — Franka Research 3 + Robotiq 2F-85 (DROID, 튜토리얼 01–06)
 
 [RoPhiTutorial](https://github.com/jwshin-kr/RoPhiTutorial)의 env / controller / visualizer 구조와 코드·수식을 그대로 두고,
-로봇만 Flexiv Rizon4 + Robotis RH-5 → **Franka Emika Panda + Franka Hand**로 바꾼 버전입니다.
+로봇만 Flexiv Rizon4 + Robotis RH-5 → **Franka Research 3(FR3) + Robotiq 2F-85**(DROID 셋업)로 바꾼 버전입니다.
 현재 범위는 튜토리얼 06 (IK QP)까지입니다. 바닥·벽·enclosure(셀)·조명 등 로봇 외 환경은 원본과 동일합니다.
 
 ## 실행
 
-터미널 3개에서 저장소 루트(`Franka_Panda/`) 기준으로 env → controller → visualizer 순서로 실행합니다.
+터미널 3개에서 저장소 루트 기준으로 env → controller → visualizer 순서로 실행합니다.
 
 ```bash
 conda activate rophi
 
 # 01–03 gravity compensation
-python run_env.py --config configs/franka_panda/env/default.yaml
-python run_controller.py --config configs/franka_panda/controllers/grav_comp.yaml
-python run_visualizer.py --config configs/visualizer/franka_panda/default.yaml
+python run_env.py --config configs/franka_fr3/env/default.yaml
+python run_controller.py --config configs/franka_fr3/controllers/grav_comp.yaml
+python run_visualizer.py --config configs/visualizer/franka_fr3/default.yaml
 
 # 04 publish collision geometry (env 단독 실행 가능)
-python run_env.py --config configs/franka_panda/env/collision.yaml
+python run_env.py --config configs/franka_fr3/env/collision.yaml
 
 # 05 collision-aware gravity compensation
-python run_env.py --config configs/franka_panda/env/collision.yaml
-python run_controller.py --config configs/franka_panda/controllers/col_aware_grav_comp.yaml
-python run_visualizer.py --config configs/visualizer/franka_panda/collision.yaml
+python run_env.py --config configs/franka_fr3/env/collision.yaml
+python run_controller.py --config configs/franka_fr3/controllers/col_aware_grav_comp.yaml
+python run_visualizer.py --config configs/visualizer/franka_fr3/collision.yaml
 
-# 06 inverse kinematics QP (controller 터미널에서 w/s, a/d, r/f, [/], h)
-python run_env.py --config configs/franka_panda/env/collision.yaml
-python run_controller.py --config configs/franka_panda/controllers/ik_qp.yaml
-python run_visualizer.py --config configs/visualizer/franka_panda/ik_qp.yaml
+# 06 inverse kinematics QP (controller 터미널에서 w/s, a/d, r/f, [/], h, o/c 그리퍼 열기/닫기)
+python run_env.py --config configs/franka_fr3/env/collision.yaml
+python run_controller.py --config configs/franka_fr3/controllers/ik_qp.yaml
+python run_visualizer.py --config configs/visualizer/franka_fr3/ik_qp.yaml
 ```
 
 ### v2 (05·06 문제 수정판)
@@ -36,18 +36,18 @@ python run_visualizer.py --config configs/visualizer/franka_panda/ik_qp.yaml
 
 ```bash
 # 05 v2: 세 가지 원인 수정 + 디버그 오버레이(고스트 로봇, witness 점/궤적, v* 화살표, 충돌 구, 플롯)
-python run_env.py --config configs/franka_panda/env/collision.yaml
-python run_controller_v2.py --config configs/franka_panda/controllers/col_aware_grav_comp_v2.yaml
-python run_visualizer_v2.py --config configs/visualizer/franka_panda/collision_v2.yaml
+python run_env.py --config configs/franka_fr3/env/collision.yaml
+python run_controller_v2.py --config configs/franka_fr3/controllers/col_aware_grav_comp_v2.yaml
+python run_visualizer_v2.py --config configs/visualizer/franka_fr3/collision_v2.yaml
 
 # 원본 동작 재현 (수정 하나씩 꺼볼 수도 있음)
-python run_controller_v2.py --config configs/franka_panda/controllers/col_aware_grav_comp_v2.yaml \
+python run_controller_v2.py --config configs/franka_fr3/controllers/col_aware_grav_comp_v2.yaml \
     --v2.fix_fresh_state false --v2.fix_multi_point_witness false --v2.fix_smooth_command false
 
 # 06 v2: 원인 1(오래된 LCM 데이터)만 수정, 원본 ik_qp.yaml 그대로 사용
-python run_env.py --config configs/franka_panda/env/collision.yaml
-python run_controller_v2.py --config configs/franka_panda/controllers/ik_qp.yaml --name ik_qp_v2
-python run_visualizer.py --config configs/visualizer/franka_panda/ik_qp.yaml
+python run_env.py --config configs/franka_fr3/env/collision.yaml
+python run_controller_v2.py --config configs/franka_fr3/controllers/ik_qp.yaml --name ik_qp_v2
+python run_visualizer.py --config configs/visualizer/franka_fr3/ik_qp.yaml
 ```
 
 | v2 파일 | 역할 |
@@ -57,9 +57,38 @@ python run_visualizer.py --config configs/visualizer/franka_panda/ik_qp.yaml
 | `utils/collision/sphere_swept_v2.py` | 링크 프리미티브 → 구 체인, 해석적 signed distance (원인 2) |
 | `communication/.../JointCtrlColDebugPubManager_v2.py` | joint_ctrl + 디버그 채널 `sw_col_aware_debug_v2` |
 | `visualizer/data_visualizer/ColAwareDebugVisualizer_v2.py` | 세 원인을 보여주는 Viser 오버레이 |
-| `visualizer/vis_manager/franka_panda/FrankaPandaVisManager_v2.py` | 원래 visualizer + 위 오버레이 |
+| `visualizer/vis_manager/franka_fr3/FrankaFR3VisManager_v2.py` | 원래 visualizer + 위 오버레이 |
 | `run_controller_v2.py`, `run_visualizer_v2.py` | v2 runner |
-| `configs/franka_panda/controllers/col_aware_grav_comp_v2.yaml`, `configs/visualizer/franka_panda/collision_v2.yaml` | v2 설정 |
+| `configs/franka_fr3/controllers/col_aware_grav_comp_v2.yaml`, `configs/visualizer/franka_fr3/collision_v2.yaml` | v2 설정 |
+
+### 실제 로봇 (FR3 + Robotiq 2F-85, DROID 셀)
+
+팔은 C++ bridge(libfranka ≥ 0.15, FR3 system 5.8.1에는 0.17.0; `communication/franka/README.md`에서 빌드),
+그리퍼는 Python(Modbus RTU, `Robotiq2F85Hardware.py`)이 구동합니다. 로봇 IP `192.168.0.113`, 그리퍼는 DROID NUC
+(`socket://192.168.0.127:5020`)에 연결되어 있다고 가정합니다. 이 PC는 PREEMPT_RT 커널이 아니므로 `realtime_config: ignore`입니다. `configs/franka_fr3/hardware/bridge.yaml`의 `robot.mock_mode: true`(기본값)이면
+로봇 연결 없이 bridge가 명령을 그대로 측정값으로 돌려주고, 그리퍼도 같은 Modbus 프로토콜 뒤의 가상 그리퍼로 바뀝니다
+(`hand.mock_mode: null` = bridge를 따름). 실제 로봇에서는 `mock_mode: false`로 바꾸고 `hand.port`를 맞춥니다.
+
+```bash
+# 01–03 gravity compensation, 실제 로봇 (mock_mode에서도 같은 명령). 처음에는 이것부터.
+python run_hardware.py --config configs/franka_fr3/hardware/default.yaml
+python run_controller_v2.py --config configs/franka_fr3/controllers/grav_comp_hw.yaml
+python run_visualizer.py --config configs/visualizer/franka_fr3/default_hw.yaml
+
+# 06 IK QP, 실제 로봇 (mock_mode에서도 같은 명령)
+python run_hardware.py --config configs/franka_fr3/hardware/default.yaml
+python run_controller_v2.py --config configs/franka_fr3/controllers/ik_qp_hw.yaml
+python run_visualizer.py --config configs/visualizer/franka_fr3/ik_qp_hw.yaml
+```
+
+- 실제 로봇에서는 v2 controller(`grav_comp_hw.yaml`의 `grav_comp_v2`, `ik_qp_hw.yaml`의 `ik_qp_v2`)를 씁니다. 원본은 측정값을 루프당 1개씩 꺼내서
+  점점 더 오래된 상태로 제어하고, bridge는 `command_timeout_s`(50 ms)보다 오래된 명령을 버립니다.
+- 05·06 controller가 기다리는 충돌 정보(로봇 프리미티브 + `floor`/`wall_*`)는 실제 로봇에서는 `HardwareFrankaFR3`가
+  `col_info.scene_xml_path`의 씬에서 만들어 보냅니다. **이 정적 장애물은 실제 셀과 맞아야 합니다.**
+- Desk의 end effector를 Robotiq 2F-85로 설정합니다: 0.925 kg, 질량중심 flange z축으로 0.052 m.
+  (bridge는 로봇이 더하는 중력을 다시 빼고 Pinocchio g(q)를 쓰므로 토크는 Desk 값과 무관하지만, 로봇의 외력 추정·반사는 이 값을 씁니다.)
+- 그리퍼 USB 어댑터 포트 권한: `sudo usermod -aG dialout $USER`. 다른 PC(예: DROID NUC)에 꽂혀 있으면 그 PC에서
+  `python3 -m serial.tools.tcp_serial_redirect -P 5020 /dev/ttyUSB0 115200`, 여기서는 `hand.port: socket://<ip>:5020`.
 
 - Viser: http://localhost:8080
 - `p` / `q`: 일시정지 / 종료 (각 터미널), `r`: env 리셋, MuJoCo 뷰어에서 `Space`: 일시정지
@@ -72,31 +101,41 @@ python run_visualizer.py --config configs/visualizer/franka_panda/ik_qp.yaml
 | Channel | Type | 방향 | 내용 |
 |---|---|---|---|
 | `sw_franka_arm_joint_meas` | `joint_meas_t` | env → controller, visualizer | 팔 q, q̇, τ (7) |
-| `sw_franka_hand_joint_meas` | `joint_meas_t` | env → controller, visualizer | 손가락 q, q̇, τ (2, 단위 m) |
-| `sw_franka_arm_hand_joint_ctrl` | `joint_ctrl_t` | controller → env | `[arm(7), hand(2)] = 9` |
+| `sw_franka_gripper_joint_meas` | `joint_meas_t` | env → controller, visualizer | 그리퍼 driver 각도 q, q̇, τ (1, rad: 0 열림 .. 0.8 닫힘) |
+| `sw_franka_arm_hand_joint_ctrl` | `joint_ctrl_t` | controller → env | `[arm(7), gripper(1)] = 8` |
 | `sim_clock` | `clock_t` | env → controller | 시뮬레이션 시간 |
 | `sw_franka_arm_hand_robot_col_info` | `col_info_t` | env → controller, visualizer | 로봇 링크 프리미티브 (link-local) |
 | `sw_franka_arm_hand_static_col_info` | `col_info_t` | env → controller, visualizer | floor / wall_back / wall_left (world) |
 | `sw_ik_target_pose` | `pose3d_t` | controller → visualizer | IK 타깃, 현재 tip, tip 속도 (06) |
+
+실제 로봇은 같은 채널의 `hw_` 버전을 씁니다 (팔 측정값은 bridge, 그리퍼 측정값·충돌 정보는 `HardwareFrankaFR3`가 보냄).
 
 ## 구성
 
 로봇에 해당하는 파일 (원본 Flexiv 파일과 1:1 대응):
 
 ```
-assets/scene/franka_panda/
-  panda_robot.xml        Panda + Hand MJCF (MuJoCo Menagerie 기반, 액추에이터 없음)
-  panda_default.xml      씬: floor / wall_back / wall_left / enclosure / 조명 (원본과 동일) + 토크 모터 9개
-  urdf/panda_viser.urdf  Pinocchio(동역학) + Viser(시각화)용 URDF
-  panda/                 메시 (visual: OBJ, collision: STL/OBJ), LICENSE (Apache-2.0)
+assets/scene/franka_fr3/
+  fr3_robot.xml        FR3 + Robotiq 2F-85 MJCF (MuJoCo Menagerie franka_fr3 + robotiq_2f85 기반, 팔 액추에이터 없음)
+  fr3_default.xml      씬: floor / wall_back / wall_left / enclosure / 조명 (원본과 동일) + 팔 토크 모터 7개 + 그리퍼 위치 서보
+  urdf/fr3_robotiq.urdf        Pinocchio(동역학, controller)용 URDF: 8 joint, 그리퍼 링크는 열린 자세로 고정
+  urdf/fr3_robotiq_viser.urdf  Viser(시각화)용 URDF: 그리퍼 링크가 <mimic>으로 driver 각도를 따름
+  urdf/make_fr3_robotiq_urdf.py  위 두 URDF를 fr3_robot.xml(로봇 전체) + urdf/_world_cell.urdf.in(world, 셀)에서 생성
+  fr3/                   FR3 메시 (visual: OBJ, collision: STL), LICENSE (Apache-2.0, Menagerie franka_fr3)
+  robotiq/               Robotiq 2F-85 메시, LICENSE (BSD-2-Clause, Menagerie robotiq_2f85)
   cell/                  enclosure 메시 (원본 Flexiv 셀과 같은 파일)
-robot_platform/sim/franka_panda/SimFrankaPanda.py                                  ← SimFlexivArm5FHand.py
-env/franka_panda/FrankaArmHandColEnv.py                                            ← FlexivArmHandColEnv.py
-communication/lcm/publisher/pub_manager/env/franka_panda/FrankaArmHandPubManager.py        ← FlexivArmHandPubManager.py
-communication/lcm/publisher/pub_manager/env/franka_panda/FrankaArmHandColInfoPubManager.py ← FlexivArmHandColInfoPubManager.py
-visualizer/vis_manager/franka_panda/FrankaPandaVisManager.py                       ← FlexivArmHandVisManager.py
-visualizer/data_visualizer/FrankaPandaVisualizer.py                                ← FlexivArmHandVisualizer.py
-configs/franka_panda/{env,controllers}/, configs/visualizer/franka_panda/          ← configs/flexiv_arm_5F_hand/, configs/visualizer/flexiv_arm_5F_hand/
+utils/gripper/robotiq_2f85.py                  driver 각도 ↔ 패드 간격 변환, 그리퍼 상수
+utils/collision/fr3_robotiq_geoms.py         로봇 충돌 프리미티브 (sim / hardware 공용)
+robot_platform/hardware/franka_fr3/Robotiq2F85Hardware.py   Robotiq Modbus RTU 드라이버 (+ mock transport)
+robot_platform/hardware/franka_fr3/HardwareFrankaFR3.py   실제 로봇: bridge(팔) + Robotiq + 충돌 정보
+configs/franka_fr3/hardware/, configs/franka_fr3/controllers/ik_qp_hw.yaml, configs/visualizer/franka_fr3/ik_qp_hw.yaml
+robot_platform/sim/franka_fr3/SimFrankaFR3.py                                  ← SimFlexivArm5FHand.py
+env/franka_fr3/FrankaArmHandColEnv.py                                            ← FlexivArmHandColEnv.py
+communication/lcm/publisher/pub_manager/env/franka_fr3/FrankaArmHandPubManager.py        ← FlexivArmHandPubManager.py
+communication/lcm/publisher/pub_manager/env/franka_fr3/FrankaArmHandColInfoPubManager.py ← FlexivArmHandColInfoPubManager.py
+visualizer/vis_manager/franka_fr3/FrankaFR3VisManager.py                       ← FlexivArmHandVisManager.py
+visualizer/data_visualizer/FrankaFR3Visualizer.py                                ← FlexivArmHandVisualizer.py
+configs/franka_fr3/{env,controllers}/, configs/visualizer/franka_fr3/          ← configs/flexiv_arm_5F_hand/, configs/visualizer/flexiv_arm_5F_hand/
 ```
 
 나머지 파일(`controller/*`, `env/BaseEnv.py`, `env/MujocoBaseEnv.py`, `communication/`, `data_type/`, `lcm_type/`, `utils/`,
@@ -106,24 +145,36 @@ factory(`get_env`, `get_controller`, ...)에는 튜토리얼 06까지 쓰는 이
 
 ## 모델 메모
 
-- **기본 자세**: 팔 `[0, 0, 0, -90°, 0, 90°, 45°]`, 손가락 0.04 m (열림).
+- **기본 자세**: 팔 `[0, 0, 0, -90°, 0, 90°, 0°]`(joint7 = 0: Robotiq이 flange에 회전 없이 붙어 있어 손가락이 셀 축과 나란함, DROID home과 같음), 그리퍼 열림 (driver 각도 0).
   Franka의 표준 ready 자세 `[0, -45°, 0, -135°, 0, 90°, 45°]`는 이 셀에서 link3(팔꿈치)가 `wall_back`에 닿습니다.
-- **MJCF ↔ URDF**: 링크/조인트 이름, 기구학, 관성이 동일합니다. Pinocchio와 MuJoCo의 g(q), M(q), FK가
-  무작위 자세 500개에서 1e-8 이내로 일치하는 것을 확인했습니다. 한쪽을 고치면 다른 쪽도 같이 고쳐야 합니다.
-- **Armature**: Menagerie 값(모든 조인트 0.1, damping 1)을 그대로 씁니다. URDF에는 armature를 표현할 수 없으므로,
-  Pinocchio의 M(q)를 MuJoCo와 맞추려면 `model.armature[:] = 0.1`이 필요합니다(원본 코드에는 없음, 03–06에는 M(q) 미사용).
-- **손가락**: Menagerie의 tendon/equality 대신 손가락마다 독립 모터(±70 N)를 둡니다. 원본의 손과 같은 방식입니다.
-- **충돌 프리미티브** (`SimFrankaPanda.get_col_info_data`): 원본처럼 링크 이름마다 프리미티브 1개(link-local offset).
-  - 팔 link1–link7: Franka 공식 자기충돌 캡슐(franka_description `franka_arm.xacro`, safety_distance 0)을 감싸는
-    실린더(길이 = 캡슐 길이 + 2r). 원본의 "관절 사이를 잇는 z축 실린더" 방식은 Panda의 DH 프레임(link1·link5는 다음
-    관절과 원점이 같음, link2·3·4·6은 x/y로 뻗음)에서 형상이 맞지 않아 이 데이터로 대체했습니다.
-  - hand: 공식 hand 캡슐을 감싸는 y축 실린더, left/right_finger: 손가락 충돌 메시의 경계 박스.
+- **FR3 팔** (`fr3_robot.xml`, Menagerie franka_fr3): 링크/조인트 이름은 `link0..link7`, `joint1..joint7`(`fr3_` 접두어 없음).
+  FR3 관절 범위(예: joint6 0.5445..4.5169 rad), 관성, armature(0.195 / 0.074), damping 0.21, frictionloss(1.137 .. 0.248 Nm)를
+  Menagerie 값 그대로 씁니다. FR3는 Panda와 기구학(DH)은 같지만 관성·관절 범위·형상이 다릅니다.
+- **MJCF ↔ URDF**: 두 URDF 모두 `make_fr3_robotiq_urdf.py`가 MJCF에서 생성합니다. 그리퍼가 열린 상태에서 Pinocchio와
+  MuJoCo의 팔 g(q)가 무작위 자세 300개에서 1.3e-7 Nm, tcp FK가 1e-8 이내로 일치하는 것을 확인했습니다. MJCF를 고치면
+  스크립트를 다시 실행합니다.
+- **Robotiq 2F-85** (`fr3_robot.xml`, Menagerie robotiq_2f85): flange에 DROID 방식으로 장착(z축 회전 없음, flange y축으로 닫힘;
+  실제 장착 각도가 다르면 `gripper` body의 quat을 바꾸고 URDF를 다시 생성). 닫힌 4절 링크(equality)와 driver 관절 두 개에
+  걸린 위치 서보를 그대로 씁니다. 자유도는 하나(`robotiq_right_driver_joint`, 0 열림 .. 0.8 rad 닫힘)이고, 실제 그리퍼처럼
+  위치 제어라 명령의 그리퍼 칸은 q_des만 쓰고 qd / τ / kp / kd는 무시합니다. 질량 0.925 kg(커플링 포함), tcp는 flange에서 0.15 m.
+  Pinocchio 3.4는 `<mimic>`을 읽지 못하므로 controller용 URDF는 링크를 열린 자세로 고정하고 오른쪽 driver만 움직입니다.
+- **그리퍼 set-point**: controller는 그리퍼 q_des에 측정값 대신 `gripper_q_des`(설정, 06에서는 `o`/`c` 키)를 보냅니다.
+  위치 제어 그리퍼에 측정값을 다시 목표로 주면 스프링·접촉으로 생긴 작은 움직임이 계속 새 목표가 되어 그리퍼가 서서히 닫힙니다.
+- **Armature**: URDF에는 armature를 표현할 수 없으므로, Pinocchio의 M(q)를 MuJoCo와 맞추려면 `model.armature`에
+  FR3 값(0.195 ×4, 0.074 ×3)을 넣어야 합니다(원본 코드에는 없음, 03–06에는 M(q) 미사용).
+- **충돌 프리미티브** (`SimFrankaFR3.get_col_info_data`): 원본처럼 링크 이름마다 프리미티브 1개(link-local offset).
+  - 팔 link1–link7: FR3 공식 자기충돌 캡슐(franka_description fr3, safety_distance 0)을 감싸는 실린더(길이 = 캡슐 길이 + 2r).
+    링크당 1개라 두 번째 캡슐이 있는 link5·link7은 반경을 키웠습니다(link5 0.095, link7 0.091로 z −0.13..0.11).
+    전체로 FR3 충돌 메시의 모든 정점을 무작위 자세 300개에서 감싸는 것을 확인했습니다. 원본의 "관절 사이를 잇는 z축 실린더"
+    방식은 Franka의 DH 프레임(link1·link5는 다음 관절과 원점이 같음, link2·3·4·6은 x/y로 뻗음)에서 형상이 맞지 않습니다.
+  - gripper: Robotiq 2F-85의 모든 충돌 geom을 전체 stroke에서 감싸는 박스 하나 (flange 프레임, 75 × 149 × 174 mm).
 - **06 config의 로봇 의존 값**: `task_link: tcp`(원본 `index_tip`), `mean_mass_matrix_diag`는 원본과 같은 방법
-  (env 기본 자세에서 MuJoCo `mj_fullM` 대각)으로 다시 계산, `Fjc`는 원본 주석대로 MJCF frictionloss에 맞춰 0
-  (Panda MJCF에는 frictionloss가 없음). 게인·임계값·주파수 등 튜닝 값은 원본과 같고, hand 부분은 원본 hand 값을 2개로 줄였습니다.
-- **`<statistic meansize="0.1"/>`** (panda_default.xml): MuJoCo는 뷰어 좌표축·접촉점·힘 화살표를 평균 바디 크기로
-  키웁니다. Panda는 바디가 14개뿐이라 큰 enclosure가 평균을 0.25로 끌어올려 좌표축이 2.5배 커 보였기 때문에,
-  Flexiv 씬과 같은 값으로 고정했습니다.
+  (env 기본 자세에서 MuJoCo `mj_fullM` 대각, Robotiq 장착 상태)으로 다시 계산, `Fjc`는 원본 주석대로 MJCF frictionloss에 맞춤
+  (FR3: 1.137 ×4, 0.763, 0.44, 0.248 Nm). v2 controller는 이 마찰 보상의 변화율을 `friction_rate_max`(100 Nm/s)로 제한합니다
+  (qd_des가 0이 되거나 부호가 바뀔 때 1 ms 안에 ~1 Nm가 튀어 libfranka의 토크 변화율 한계 1000 Nm/s를 넘기 때문).
+  게인·임계값·주파수 등 튜닝 값은 원본과 같고, 그리퍼 칸은 위치 제어라 쓰이지 않습니다.
+- **`<statistic meansize="0.1"/>`** (fr3_default.xml): MuJoCo는 뷰어 좌표축·접촉점·힘 화살표를 평균 바디 크기로
+  키웁니다. 큰 enclosure가 평균을 끌어올려 좌표축이 크게 보이므로 Flexiv 씬과 같은 값으로 고정했습니다.
 
 ## 알려진 문제와 v2
 
@@ -139,5 +190,10 @@ factory(`get_env`, `get_controller`, ...)에는 튜토리얼 06까지 쓰는 이
    상태에서 qd_des = 0이라 벽에 들어가면 빠져나오지 못합니다. → 탈출 속도 상한, 연속 activation, QP smoothness 항,
    `collision`에서도 계속 밀어내기, 게인 램프, qd_des 변화율 제한.
 
-Franka에서 확인한 결과: 06 v2는 LCM 실행에서 타깃을 0.9 mm까지 따라갑니다(원본 runner는 0.6–0.7 m 이탈).
+Panda + Franka Hand 때 확인한 결과: 06 v2는 LCM 실행에서 타깃을 0.9 mm까지 따라갑니다(원본 runner는 0.6–0.7 m 이탈).
 05 v2는 손을 벽/바닥으로 밀었다 놓으면 다시 떨어져 안정되고, 수정을 끈 원본 동작은 `collision` 상태에 갇힙니다.
+FR3 + Robotiq 2F-85로 바꾼 뒤: 01–03 gravity comp은 sim에서 팔을 밀면 움직이고 놓은 자리에 그대로 머뭅니다. 06 v2는 sim에서
+키 입력으로 옮긴 타깃을 `pos_tol`(5 mm) 안으로 따라갑니다(팔 토크 최대 43 Nm, 토크 변화율 최대 818 Nm/s). 실제 로봇 스택
+(`run_hardware.py`, libfranka 0.17 bridge + 그리퍼 mock_mode)에서 gravity comp·06 모두 명령 1 kHz, 명령 간격 최대 ~4 ms(bridge 타임아웃
+50 ms), bridge가 실행 중 매초 ~1000개의 fresh 명령을 받고, 그리퍼 열기/닫기·controller 재시작·종료가 정상입니다. mock_mode는 명령을
+그대로 측정값으로 돌려주므로 실제 팔의 움직임(마찰, 센서 노이즈, 반사)은 확인하지 못했습니다.

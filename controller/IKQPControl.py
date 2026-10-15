@@ -54,7 +54,8 @@ class IKQPController(BaseController):
     Keyboard (controller terminal)
     ------------------------------
     ``w/s`` ±x, ``a/d`` ±y, ``r/f`` ±z, ``[/]`` step size,
-    ``h`` home (joint-space go-to default_q), ``p`` pause, ``q`` quit.
+    ``h`` home (joint-space go-to default_q), ``o/c`` open / close the
+    gripper (gripper_q_open / gripper_q_close), ``p`` pause, ``q`` quit.
     """
 
     def __init__(self, config: DictConfig, *args, **kwargs):
@@ -138,6 +139,10 @@ class IKQPController(BaseController):
         self._target_step_min = float(config.get("target_step_min", 0.002))
         self._target_step_max = float(config.get("target_step_max", 0.05))
 
+        # Gripper set-points for the o / c keys (driver angle, rad).
+        self._gripper_q_open = float(config.get("gripper_q_open", 0.0))
+        self._gripper_q_close = float(config.get("gripper_q_close", 0.8))
+
         pin_robot = pin.RobotWrapper.BuildFromURDF(
             config["urdf_path"], list(config["mesh_path"].values())
         )
@@ -173,7 +178,10 @@ class IKQPController(BaseController):
         self._fcl_robot: dict = {}
         self._fcl_static: dict = {}
 
-        print("[IKQP] Keys: w/s ±x, a/d ±y, r/f ±z, [/] step, h home, p pause, q quit.")
+        print(
+            "[IKQP] Keys: w/s ±x, a/d ±y, r/f ±z, [/] step, h home, "
+            "o/c gripper open/close, p pause, q quit."
+        )
         print(f"[IKQP] ctrl_freq={self._ctrl_freq} Hz, plan_freq={self._plan_freq} Hz")
 
     # ------------------------------------------------------------------ init
@@ -187,9 +195,14 @@ class IKQPController(BaseController):
         print("[IKQP] Initialized with FCL geoms.")
 
     def _wait_for_col_geoms(
-        self, que: Queue, label: str, timeout_s: float = 2.0
+        self, que: Queue, label: str, timeout_s: float | None = None
     ) -> dict:
+        """Block until the first ColInfo arrives on ``que`` (published by the
+        franka_fr3_col env in sim, by run_hardware.py on the robot). Waits as
+        long as it takes (``timeout_s=None``), reminding every 2 s; Ctrl-C
+        aborts."""
         tic = time.time()
+        last_note = tic
         while True:
             if not que.empty():
                 msg = que.get()
@@ -205,8 +218,14 @@ class IKQPController(BaseController):
                     }
                     for name, g in dict_col.items()
                 }
-            if time.time() - tic > timeout_s:
+            if timeout_s is not None and time.time() - tic > timeout_s:
                 raise TimeoutError(f"Timeout waiting for {label} ColInfo.")
+            if time.time() - last_note > 2.0:
+                last_note = time.time()
+                print(
+                    f"[IKQP] Waiting for {label} ColInfo ({time.time() - tic:.0f} s). "
+                    f"Is the collision env (sim) / run_hardware.py (robot) running?"
+                )
             time.sleep(0.001)
 
     # ----------------------------------------------------------- thread hooks
@@ -257,6 +276,12 @@ class IKQPController(BaseController):
 
         if key == "h":
             self._enter_home_mode()
+            return
+
+        if key in ("o", "c") and self._gripper_joint_idx:
+            q = self._gripper_q_open if key == "o" else self._gripper_q_close
+            self._gripper_q_des[:] = q
+            print(f"[IKQP] gripper q_des = {q:.3f} rad ({'open' if key == 'o' else 'close'})")
             return
 
         if key == "[":
@@ -578,7 +603,7 @@ class IKQPController(BaseController):
                 self._target_initialized = True
                 p_des = p.copy()
             print(
-                f"[IKQP] Target seeded at fingertip "
+                f"[IKQP] Target seeded at task point "
                 f"[{p[0]:.3f}, {p[1]:.3f}, {p[2]:.3f}]"
             )
 
@@ -681,6 +706,7 @@ class IKQPController(BaseController):
             kd = self._velocity_control_D_gain
 
         tau_ff = self._tau_ff(q, qd, qd_des)
+        q_des = self._with_gripper_set_point(q_des)
         cmd = JointCtrlData(num_joints=self._num_joints)
         cmd.set_data(self._cur_time, q_des, qd_des, tau_ff, kp, kd)
         self.ctrl_pub_que.put(cmd)

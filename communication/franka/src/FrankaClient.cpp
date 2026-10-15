@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <exception>
 #include <iostream>
 #include <stdexcept>
@@ -13,7 +14,7 @@ namespace communication::franka {
 
 namespace {
 
-// The Panda arm always has 7 joints (franka::RobotState uses std::array<7>).
+// The FR3 arm always has 7 joints (franka::RobotState uses std::array<7>).
 constexpr std::size_t kFrankaArmJoints = 7;
 
 double NowSeconds()
@@ -59,6 +60,10 @@ void FrankaClient::Initialize(const BridgeConfig& config)
     last_state_.tau.assign(num_arm_joints_, 0.0);
 
     if (mock_mode_) {
+        if (config.robot.move_to_start) {
+            std::cout << "[franka_client] move_to_start (mock): state set to default_hold_q."
+                      << std::endl;
+        }
         return;
     }
 
@@ -130,12 +135,63 @@ void FrankaClient::Initialize(const BridgeConfig& config)
         ToArray<6>(config.robot.lower_force_thresholds),
         ToArray<6>(config.robot.upper_force_thresholds));
 
+    if (config.robot.move_to_start) {
+        MoveToStart(config.safety.default_hold_q, config.robot.move_to_start_max_vel);
+    }
+    latest_state_ = ToArmState(robot_->readOnce());
+
     // Stay out of torque control until the bridge sees a fresh command; the
     // robot's own controller holds the pose meanwhile (Idle). EnsureActiveMode()
     // starts the control loop on the first fresh command and EnsureIdleMode()
     // ends it when commands go stale.
     std::cout << "[franka_client] Idle (waiting for commands)." << std::endl;
     is_active_mode_ = false;
+}
+
+void FrankaClient::MoveToStart(const std::vector<double>& q_goal_vec, double max_vel)
+{
+    std::array<double, kFrankaArmJoints> q_goal{};
+    std::copy_n(q_goal_vec.begin(), kFrankaArmJoints, q_goal.begin());
+
+    const auto q_now = robot_->readOnce().q;
+    double max_delta = 0.0;
+    for (std::size_t i = 0; i < kFrankaArmJoints; ++i) {
+        max_delta = std::max(max_delta, std::abs(q_goal[i] - q_now[i]));
+    }
+    if (max_delta < 1e-3) {
+        std::cout << "[franka_client] move_to_start: already at the start pose." << std::endl;
+        return;
+    }
+    // Quintic s(tau) = 10 tau^3 - 15 tau^4 + 6 tau^5: zero velocity and
+    // acceleration at both ends, peak velocity 1.875 * delta / T.
+    const double duration = std::max(1.875 * max_delta / max_vel, 1.0);
+    std::cout << "[franka_client] move_to_start: moving to default_hold_q (max joint change "
+              << max_delta << " rad, " << duration << " s). Keep the user stop in hand."
+              << std::endl;
+
+    std::array<double, kFrankaArmJoints> q_start{};
+    double t = 0.0;
+    robot_->control(
+        [&](const ::franka::RobotState& state, ::franka::Duration period)
+            -> ::franka::JointPositions {
+            if (t == 0.0) {
+                q_start = state.q_d;  // start from the commanded pose (libfranka examples)
+            }
+            t += period.toSec();
+            const double tau = std::min(t / duration, 1.0);
+            const double s = tau * tau * tau * (10.0 - 15.0 * tau + 6.0 * tau * tau);
+            std::array<double, kFrankaArmJoints> q{};
+            for (std::size_t i = 0; i < kFrankaArmJoints; ++i) {
+                q[i] = q_start[i] + s * (q_goal[i] - q_start[i]);
+            }
+            ::franka::JointPositions out(q);
+            if (tau >= 1.0) {
+                return ::franka::MotionFinished(out);
+            }
+            return out;
+        },
+        ::franka::ControllerMode::kJointImpedance, limit_rate_, cutoff_frequency_);
+    std::cout << "[franka_client] move_to_start: done." << std::endl;
 }
 
 void FrankaClient::EnsureActiveMode()

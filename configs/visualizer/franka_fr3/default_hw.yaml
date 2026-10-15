@@ -1,0 +1,17 @@
+# Tutorials 01-03 visualizer for the REAL robot (hw_ channels; see
+# configs/franka_fr3/controllers/grav_comp_hw.yaml).
+name: franka_fr3
+vis_freq: 30
+
+franka_fr3:
+  # Channels the robot publishes joint_meas_t on (bridge + HardwareFrankaFR3).
+  arm_joint_meas_channel: hw_franka_arm_joint_meas
+  hand_joint_meas_channel: hw_franka_gripper_joint_meas
+  num_arm_joints: 7
+  num_hand_joints: 1
+
+  # FR3 arm + Robotiq 2F-85 + robot cell URDF (gripper linkage articulated
+  # via <mimic>). Uses relative mesh paths, so it loads directly.
+  urdf_path: assets/scene/franka_fr3/urdf/fr3_robotiq_viser.urdf
+  # Optional yourdfpy mesh_dir override; leave blank to use the URDF's own paths.
+  mesh_dir: ""

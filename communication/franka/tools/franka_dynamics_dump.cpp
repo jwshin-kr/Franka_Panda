@@ -7,8 +7,8 @@
 //   Usage: franka_dynamics_dump <robot_ip> [out.csv]
 //
 // Writes a CSV with columns j0..j6,g0..g6 (rad, Nm). Compare with Pinocchio's
-// computeGeneralizedGravity on assets/scene/franka_panda/urdf/panda_viser.urdf
-// (arm joints; fingers at any value).
+// computeGeneralizedGravity on assets/scene/franka_fr3/urdf/fr3_robotiq.urdf
+// (arm joints; gripper joint at any value).
 //
 // IMPORTANT: the Franka bridge (or any other libfranka Robot client) must NOT
 // be running - only one FCI connection to the robot is allowed at a time. This
@@ -42,9 +42,9 @@ void WriteRow(
 }
 
 // A representative set of poses to probe. Sweeps joint2 and joint4 (the main
-// gravity-loaded joints) through the Panda's range with the others at zero, so
+// gravity-loaded joints) through the FR3's range with the others at zero, so
 // the per-pose g(q) traces out the gravity curve for those joints. joint4 of
-// the Panda only moves in [-176, -4] deg, so it is swept on that side.
+// the FR3 only moves in [-174.3, -8.7] deg, so it is swept on that side.
 std::vector<std::array<double, kNumJoints>> BuildPoses()
 {
     std::vector<std::array<double, kNumJoints>> poses;
@@ -60,7 +60,7 @@ std::vector<std::array<double, kNumJoints>> BuildPoses()
         poses.push_back(q);
     }
     // The Franka "ready" pose and this cell's default pose (see
-    // configs/franka_panda/env/default.yaml).
+    // configs/franka_fr3/env/default.yaml).
     poses.push_back({0.0, -45 * deg, 0.0, -135 * deg, 0.0, 90 * deg, 45 * deg});
     poses.push_back({0.0, 0.0, 0.0, -90 * deg, 0.0, 90 * deg, 45 * deg});
     return poses;
@@ -90,8 +90,9 @@ int main(int argc, char** argv)
         }
 
         // libfranka's model library. Its gravity uses the end-effector + load
-        // configured in Desk (m_total, F_x_Ctotal) - with the Franka Hand set
-        // as end effector this matches a URDF that includes the hand.
+        // configured in Desk (m_total, F_x_Ctotal) - with the Robotiq 2F-85
+        // entered there (0.925 kg, centre of mass 0.052 m along the flange z)
+        // this matches the URDF that includes the gripper.
         franka::Model model = robot.loadModel();
 
         // Report the current real pose comparison too.

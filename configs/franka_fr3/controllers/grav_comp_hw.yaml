@@ -1,0 +1,55 @@
+# Tutorials 01-03 (gravity compensation) on the REAL Franka Research 3 + Robotiq
+# 2F-85 (run_hardware.py with configs/franka_fr3/hardware/default.yaml).
+# Same as grav_comp.yaml except:
+#   * env_mode: real (wall-clock time; the bridge drops commands whose
+#     timestamp is older than command_timeout_s),
+#   * hw_ channels,
+#   * the v2 controller (GravCompControl_v2: newest measurement in, newest
+#     command out). Run it with run_controller_v2.py:
+#
+#   python run_hardware.py --config configs/franka_fr3/hardware/default.yaml
+#   python run_controller_v2.py --config configs/franka_fr3/controllers/grav_comp_hw.yaml
+#   python run_visualizer.py --config configs/visualizer/franka_fr3/default_hw.yaml
+name: grav_comp_v2
+ctrl_freq: 1000
+env_mode: real
+
+num_joints: 8
+num_arm_joints: 7
+
+# Pinocchio gravity model (same kinematics / inertias as the sim MJCF).
+urdf_path: assets/scene/franka_fr3/urdf/fr3_robotiq.urdf
+
+# Optional seed before the first measurement arrives.
+default_q: [
+  0.0, 0.0, 0.0, -1.5707963, 0.0, 1.5707963, 0.0,
+  0.0,
+]
+
+# Viscous damping on the arm joints only (Nm / (rad/s)).
+arm_damping: 0.01
+
+# Robotiq 2F-85 set-point: q_des of the gripper slot (driver angle, rad:
+# 0 = open .. 0.8 = closed). The gripper is position controlled, so its q_des
+# always carries this set-point instead of following the measurement.
+gripper_joint_idx: [7]
+gripper_q_des: [0.0]
+
+dict_joints:
+  arm:
+    joint_meas_channel: hw_franka_arm_joint_meas
+    list_joint_idx: [0, 1, 2, 3, 4, 5, 6]
+  gripper:
+    joint_meas_channel: hw_franka_gripper_joint_meas
+    list_joint_idx: [7]
+
+sub_manager:
+  name: arm_hand_joint
+  arm_joint_meas_channel: hw_franka_arm_joint_meas
+  hand_joint_meas_channel: hw_franka_gripper_joint_meas
+  num_arm_joints: 7
+  num_hand_joints: 1
+
+pub_manager:
+  name: joint_ctrl
+  ctrl_channel: hw_franka_arm_hand_joint_ctrl

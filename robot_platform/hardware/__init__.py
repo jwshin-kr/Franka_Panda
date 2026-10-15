@@ -16,11 +16,11 @@ def get_hardware_platform(
     # cfg_merged = OmegaConf.merge(cfg_platform, cfg_sub_manager, cfg_pub_manager)
     if name == "base":
         return BaseHardwarePlatform(cfg_platform)
-    elif name == "franka_panda":
-        from robot_platform.hardware.franka_panda.HardwareFrankaPanda import (
-            HardwareFrankaPanda,
+    elif name == "franka_fr3":
+        from robot_platform.hardware.franka_fr3.HardwareFrankaFR3 import (
+            HardwareFrankaFR3,
         )
 
-        return HardwareFrankaPanda(cfg_platform)
+        return HardwareFrankaFR3(cfg_platform)
     else:
         raise ValueError(f"Unknown platform name: {name}")

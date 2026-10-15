@@ -1,0 +1,43 @@
+name: grav_comp
+ctrl_freq: 1000
+env_mode: sim_real_time
+
+num_joints: 8
+num_arm_joints: 7
+
+# Pinocchio gravity model (same kinematics / inertias as the sim MJCF).
+urdf_path: assets/scene/franka_fr3/urdf/fr3_robotiq.urdf
+
+# Optional seed before the first measurement arrives.
+default_q: [
+  0.0, 0.0, 0.0, -1.5707963, 0.0, 1.5707963, 0.0,
+  0.0,
+]
+
+# Viscous damping on the arm joints only (Nm / (rad/s)).
+arm_damping: 0.01
+
+# Robotiq 2F-85 set-point: q_des of the gripper slot (driver angle, rad:
+# 0 = open .. 0.8 = closed). The gripper is position controlled, so its q_des
+# always carries this set-point instead of following the measurement.
+gripper_joint_idx: [7]
+gripper_q_des: [0.0]
+
+dict_joints:
+  arm:
+    joint_meas_channel: sw_franka_arm_joint_meas
+    list_joint_idx: [0, 1, 2, 3, 4, 5, 6]
+  gripper:
+    joint_meas_channel: sw_franka_gripper_joint_meas
+    list_joint_idx: [7]
+
+sub_manager:
+  name: arm_hand_joint
+  arm_joint_meas_channel: sw_franka_arm_joint_meas
+  hand_joint_meas_channel: sw_franka_gripper_joint_meas
+  num_arm_joints: 7
+  num_hand_joints: 1
+
+pub_manager:
+  name: joint_ctrl
+  ctrl_channel: sw_franka_arm_hand_joint_ctrl

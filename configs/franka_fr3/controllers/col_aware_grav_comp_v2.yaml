@@ -1,0 +1,135 @@
+# v2 of col_aware_grav_comp.yaml (the original file is unchanged).
+# Run with:  python run_controller_v2.py --config configs/franka_fr3/controllers/col_aware_grav_comp_v2.yaml
+# Reproduce the original behaviour (to SEE each cause in run_visualizer_v2.py):
+#   ... --v2.fix_fresh_state false --v2.fix_multi_point_witness false --v2.fix_smooth_command false
+name: col_aware_grav_comp_v2
+ctrl_freq: 1000
+env_mode: sim_real_time
+
+# Pinocchio model (RobotWrapper needs mesh dirs to resolve the URDF meshes).
+urdf_path: assets/scene/franka_fr3/urdf/fr3_robotiq.urdf
+mesh_path:
+  path_1: assets/scene/franka_fr3
+  path_2: assets/scene/franka_fr3/fr3
+  path_3: assets/scene/franka_fr3/cell
+  path_4: assets/scene/franka_fr3/robotiq
+
+num_joints: 8
+# arm [0,0,0,-90,0,90,0] deg -> rad; Robotiq 2F-85 open (driver angle 0 rad).
+default_q_values: [
+  0.0, 0.0, 0.0, -1.5707963, 0.0, 1.5707963, 0.0,
+  0.0,
+]
+
+# PD gains. Zeroed in the "grav_comp" (free-float) state; applied only when
+# repelling from / avoiding an obstacle. Arm first 7, gripper last 1 (the
+# 2F-85 is position controlled: sim and hardware ignore its gains and track
+# its q_des, which the controller holds at the measured opening).
+kp: [200, 200, 200, 200, 100, 100, 35,
+     0]
+kd: [20, 20, 20, 20, 10, 10, 3.5,
+     0]
+kp_multiplier: [1, 1, 1, 1, 1, 1, 1,
+                1]
+joint_velocity_limit: [2, 2, 2, 2, 2, 2, 2,
+                       1.5]
+
+# Repulsive-field tuning: within margin_thr of safty_dist_thr, push away with a
+# velocity that grows to repulsive_coeff as the margin -> 0. Below safty_dist_thr
+# the controller stops (state="collision").
+safty_dist_thr: 0.02
+magin_thr: 0.08
+repulsive_coeff: 8
+
+# pinocchio BODY-frame names carrying collision primitives (from the platform).
+col_link_names: ["link1", "link2", "link3", "link4", "link5", "link6", "link7", "gripper"]
+# static obstacle names (must match the env's static_col_info geoms = MJCF walls).
+obs_names: ["floor", "wall_back", "wall_left"]
+# link <-> obstacle pairs to distance-check each plan tick.
+col_pairs:
+  - ["link2", "wall_back"]
+  - ["link2", "wall_left"]
+  - ["link3", "wall_back"]
+  - ["link3", "wall_left"]
+  - ["link3", "floor"]
+  - ["link4", "wall_back"]
+  - ["link4", "wall_left"]
+  - ["link4", "floor"]
+  - ["link5", "wall_back"]
+  - ["link5", "wall_left"]
+  - ["link5", "floor"]
+  - ["link6", "wall_back"]
+  - ["link6", "wall_left"]
+  - ["link6", "floor"]
+  - ["link7", "wall_back"]
+  - ["link7", "wall_left"]
+  - ["link7", "floor"]
+  - ["gripper", "wall_back"]
+  - ["gripper", "wall_left"]
+  - ["gripper", "floor"]
+
+plan_freq: 100
+plan_horizon: 0.1
+
+# Robotiq 2F-85 set-point: q_des of the gripper slot (driver angle, rad:
+# 0 = open .. 0.8 = closed). The gripper is position controlled, so its q_des
+# always carries this set-point instead of following the measurement.
+gripper_joint_idx: [7]
+gripper_q_des: [0.0]
+
+dict_joints:
+  arm:
+    joint_meas_channel: sw_franka_arm_joint_meas
+    list_joint_idx: [0, 1, 2, 3, 4, 5, 6]
+  gripper:
+    joint_meas_channel: sw_franka_gripper_joint_meas
+    list_joint_idx: [7]
+
+sub_manager:
+  name: arm_hand_joint_col_info
+  arm_joint_meas_channel: sw_franka_arm_joint_meas
+  hand_joint_meas_channel: sw_franka_gripper_joint_meas
+  static_col_info_channel: sw_franka_arm_hand_static_col_info
+  robot_col_info_channel: sw_franka_arm_hand_robot_col_info
+  num_arm_joints: 7
+  num_hand_joints: 1
+
+pub_manager:
+  name: joint_ctrl_col_debug_v2
+  ctrl_channel: sw_franka_arm_hand_joint_ctrl
+  debug_channel: sw_col_aware_debug_v2
+
+# Planner debug (witness points, margins, v*, state, measurement age) for
+# run_visualizer_v2.py. Empty string disables it.
+debug_channel: sw_col_aware_debug_v2
+
+v2:
+  # ---- the three fixes (set false to reproduce the original behaviour) ----
+  # cause 1: newest joint measurement in, newest command out (no FIFO backlog)
+  fix_fresh_state: true
+  # cause 2: sphere chain per link -> continuous witness points
+  fix_multi_point_witness: true
+  # cause 3: bounded/smooth repulsive command, no dead-end "collision" stop
+  fix_smooth_command: true
+
+  # sphere model: centre spacing as a fraction of the sphere radius
+  sphere_spacing_ratio: 1.0
+  # escape speed of a witness point at margin <= 0 (m/s). Replaces the
+  # repulsive_coeff (8 m/s) peak of the original, which joints cannot reach.
+  repulsive_max_speed: 1.0
+  # QP: lambda*||qd||^2 + mu*||qd - qd_prev||^2 (mu smooths plan-to-plan)
+  qp_regularization: 0.02
+  qp_smoothness: 0.05
+  # CBF-style limit: d(dist)/dt >= -cbf_gamma * margin (1/s). Default = 1/plan_horizon.
+  cbf_gamma: 10.0
+  # 1 kHz loop: max change rate of qd_des (rad/s^2) and of the gain blend (1/s)
+  qd_des_max_acc: 20.0
+  gain_ramp_rate: 10.0
+  # gains reach 100% once a point is this deep into the band (fraction of magin_thr)
+  gain_full_at: 0.25
+  # debug only: a witness point moving more than this between plans = "jump" (m)
+  witness_jump_thr: 0.03
+  # debug only: publish rows with margin < debug_margin * magin_thr
+  debug_margin: 1.5
+
+print_period: 1.0

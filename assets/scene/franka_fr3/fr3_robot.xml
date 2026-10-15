@@ -1,0 +1,374 @@
+<mujoco model="franka_fr3">
+  <!-- Franka Research 3: 7-DoF arm + Robotiq 2F-85 gripper (the DROID setup).
+
+       Arm: MuJoCo Menagerie franka_fr3/fr3.xml (Apache-2.0, see fr3/LICENSE),
+       derived from franka_description. Kinematics, inertial parameters, joint
+       armature / damping / frictionloss, FR3 joint ranges and meshes are
+       unchanged. Gripper: MuJoCo Menagerie robotiq_2f85 (BSD-2-Clause, see
+       robotiq/LICENSE). Edits:
+         - link / joint names without the "fr3_" prefix (link0..link7,
+           joint1..joint7), mesh paths point into fr3/ and robotiq/,
+         - no arm actuators here: like Rizon4_hand_robot.xml, the scene file
+           adds one torque motor per arm joint (and the gripper actuator),
+         - geom classes follow the Rizon4 model: "no_contact" (visual) and
+           "contact" (collision, same contact parameters as Rizon4). Collision
+           geoms are in group 4 so they stay hidden by default (enable geom
+           group 4 in the MuJoCo viewer to show them),
+         - massless frames: flange (= franka_description fr3_link8), gripper
+           (the 2F-85 on the flange, DROID mount: not turned about z, so the
+           fingers close along the flange y axis) and tcp (between the pads,
+           0.15 m along the flange z axis),
+         - the 2F-85 keeps the Menagerie closed four-bar linkage (equality
+           constraints) and its single position-servo drive on the two driver
+           joints. The one gripper DoF is robotiq_right_driver_joint
+           (0 = open .. 0.8 rad = closed), like the real gripper, which takes
+           a position (0..255) only. Bodies / joints are prefixed "robotiq_",
+           masses sum to 0.925 kg (datasheet, incl. coupling).
+
+       urdf/fr3_robotiq.urdf (Pinocchio, gripper linkage frozen open) and
+       urdf/fr3_robotiq_viser.urdf (Viser, linkage via <mimic>) are written
+       from this file by urdf/make_fr3_robotiq_urdf.py. Rerun it after an
+       edit here. -->
+  <compiler angle="radian" autolimits="true"/>
+
+  <default>
+    <default class="fr3">
+      <!-- Menagerie FR3 joint dynamics; overwritten in joints 5, 6 and 7. -->
+      <joint damping="0.21" armature="0.195" frictionloss="1.137"/>
+      <!-- Geoms are massless (density=0, as in Rizon4_hand_robot.xml): every
+           robot body has an explicit <inertial>, and the static enclosure
+           (which uses no_contact) should not get a mesh-volume mass. -->
+      <!-- Visual-only geoms (no collision). -->
+      <default class="no_contact">
+        <geom type="mesh" conaffinity="0" contype="0" group="1" density="0"/>
+      </default>
+      <!-- Collision geoms. -->
+      <default class="contact">
+        <geom type="mesh" conaffinity="1" contype="1" condim="6" priority="1" group="4" density="0"
+              friction="1.0 0.02 0.0001" solimp="0.95 0.99 0.001 0.5 2" solref="0.005 1"/>
+      </default>
+    </default>
+
+    <!-- Robotiq 2F-85 (Menagerie robotiq_2f85 classes). -->
+    <default class="robotiq">
+      <mesh scale="0.001 0.001 0.001"/>
+      <general biastype="affine"/>
+      <joint axis="1 0 0"/>
+      <default class="robotiq_driver">
+        <joint range="0 0.8" armature="0.005" damping="0.1" solimplimit="0.95 0.99 0.001" solreflimit="0.005 1"/>
+      </default>
+      <default class="robotiq_follower">
+        <joint range="-0.872664 0.872664" armature="0.001" pos="0 -0.018 0.0065" solimplimit="0.95 0.99 0.001"
+          solreflimit="0.005 1"/>
+      </default>
+      <default class="robotiq_spring_link">
+        <joint range="-0.29670597283 0.8" armature="0.001" stiffness="0.05" springref="2.62" damping="0.00125"/>
+      </default>
+      <default class="robotiq_coupler">
+        <joint range="-1.57 0" armature="0.001" solimplimit="0.95 0.99 0.001" solreflimit="0.005 1"/>
+      </default>
+      <default class="robotiq_visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="1" density="0"/>
+      </default>
+      <default class="robotiq_collision">
+        <geom type="mesh" group="4" density="0"/>
+        <!-- Finger pads (Menagerie friction). -->
+        <default class="robotiq_pad_box1">
+          <geom type="box" pos="0 -0.0026 0.028125" size="0.011 0.004 0.009375"
+            friction="0.7" solimp="0.95 0.99 0.001" solref="0.004 1" priority="1" rgba="0.55 0.55 0.55 1"/>
+        </default>
+        <default class="robotiq_pad_box2">
+          <geom type="box" pos="0 -0.0026 0.009375" size="0.011 0.004 0.009375"
+            friction="0.6" solimp="0.95 0.99 0.001" solref="0.004 1" priority="1" rgba="0.45 0.45 0.45 1"/>
+        </default>
+      </default>
+    </default>
+  </default>
+
+  <asset>
+    <material name="black" rgba=".2 .2 .2 1"/>
+    <material name="white" rgba="1 1 1 1"/>
+    <material name="red" rgba="1 0.072272 0.039546 1"/>
+    <material name="gray" rgba="0.863156 0.863156 0.863157 1"/>
+    <material name="button_green" rgba="0.102241 0.571125 0.102242 1"/>
+    <material name="button_red" rgba="0.520996 0.008023 0.013702 1"/>
+    <material name="button_blue" rgba="0.024157 0.445201 0.737911 1"/>
+
+    <mesh file="fr3/link0_0.obj"/>
+    <mesh file="fr3/link0_1.obj"/>
+    <mesh file="fr3/link0_2.obj"/>
+    <mesh file="fr3/link0_3.obj"/>
+    <mesh file="fr3/link0_4.obj"/>
+    <mesh file="fr3/link0_5.obj"/>
+    <mesh file="fr3/link0_6.obj"/>
+    <mesh file="fr3/link1.obj"/>
+    <mesh file="fr3/link2.obj"/>
+    <mesh file="fr3/link3_0.obj"/>
+    <mesh file="fr3/link3_1.obj"/>
+    <mesh file="fr3/link4_0.obj"/>
+    <mesh file="fr3/link4_1.obj"/>
+    <mesh file="fr3/link5_0.obj"/>
+    <mesh file="fr3/link5_1.obj"/>
+    <mesh file="fr3/link5_2.obj"/>
+    <mesh file="fr3/link6_0.obj"/>
+    <mesh file="fr3/link6_1.obj"/>
+    <mesh file="fr3/link6_2.obj"/>
+    <mesh file="fr3/link6_3.obj"/>
+    <mesh file="fr3/link6_4.obj"/>
+    <mesh file="fr3/link6_5.obj"/>
+    <mesh file="fr3/link6_6.obj"/>
+    <mesh file="fr3/link6_7.obj"/>
+    <mesh file="fr3/link7_0.obj"/>
+    <mesh file="fr3/link7_1.obj"/>
+    <mesh file="fr3/link7_2.obj"/>
+    <mesh file="fr3/link7_3.obj"/>
+
+    <mesh name="link0_coll" file="fr3/link0.stl"/>
+    <mesh name="link1_coll" file="fr3/link1.stl"/>
+    <mesh name="link2_coll" file="fr3/link2.stl"/>
+    <mesh name="link3_coll" file="fr3/link3.stl"/>
+    <mesh name="link4_coll" file="fr3/link4.stl"/>
+    <mesh name="link5_coll" file="fr3/link5.stl"/>
+    <mesh name="link6_coll" file="fr3/link6.stl"/>
+    <mesh name="link7_coll" file="fr3/link7.stl"/>
+
+
+    <!-- Robotiq 2F-85 -->
+    <material name="robotiq_metal" rgba="0.58 0.58 0.58 1"/>
+    <material name="robotiq_silicone" rgba="0.1882 0.1882 0.1882 1"/>
+    <material name="robotiq_gray" rgba="0.4627 0.4627 0.4627 1"/>
+    <material name="robotiq_black" rgba="0.149 0.149 0.149 1"/>
+    <mesh class="robotiq" name="robotiq_base_mount" file="robotiq/base_mount.stl"/>
+    <mesh class="robotiq" name="robotiq_base" file="robotiq/base.stl"/>
+    <mesh class="robotiq" name="robotiq_driver" file="robotiq/driver.stl"/>
+    <mesh class="robotiq" name="robotiq_coupler" file="robotiq/coupler.stl"/>
+    <mesh class="robotiq" name="robotiq_follower" file="robotiq/follower.stl"/>
+    <mesh class="robotiq" name="robotiq_pad" file="robotiq/pad.stl"/>
+    <mesh class="robotiq" name="robotiq_silicone_pad" file="robotiq/silicone_pad.stl"/>
+    <mesh class="robotiq" name="robotiq_spring_link" file="robotiq/spring_link.stl"/>
+  </asset>
+
+  <worldbody>
+    <body name="link0" childclass="fr3">
+      <!-- Welded to the world (no effect on dynamics); franka_description
+           fr3 link0 inertial, needed because the geoms are massless. -->
+      <inertial mass="2.3966" pos="-0.0172 0.0004 0.0745" diaginertia="0.009 0.0115 0.0085"/>
+      <geom mesh="link0_0" material="black" class="no_contact"/>
+      <geom mesh="link0_1" material="white" class="no_contact"/>
+      <geom mesh="link0_2" material="white" class="no_contact"/>
+      <geom mesh="link0_3" material="white" class="no_contact"/>
+      <geom mesh="link0_4" material="white" class="no_contact"/>
+      <geom mesh="link0_5" material="red" class="no_contact"/>
+      <geom mesh="link0_6" material="black" class="no_contact"/>
+      <geom mesh="link0_coll" class="contact"/>
+      <body name="link1" pos="0 0 0.333">
+        <inertial pos="4.128e-07 -0.0181251 -0.0386036" quat="0.998098 -0.0605364 0.00380499 0.0110109" mass="2.92747"
+          diaginertia="0.0239286 0.0227246 0.00610634"/>
+        <joint name="joint1" axis="0 0 1" range="-2.7437 2.7437" actuatorfrcrange="-87 87"/>
+        <geom class="contact" mesh="link1_coll"/>
+        <geom material="white" mesh="link1" class="no_contact"/>
+        <body name="link2" quat="1 -1 0 0">
+          <inertial pos="0.00318289 -0.0743222 0.00881461" quat="0.502599 0.584437 -0.465998 0.434366" mass="2.93554"
+            diaginertia="0.0629567 0.0411924 0.0246371"/>
+          <joint name="joint2" axis="0 0 1" range="-1.7837 1.7837" actuatorfrcrange="-87 87"/>
+          <geom material="white" mesh="link2" class="no_contact"/>
+          <geom class="contact" mesh="link2_coll"/>
+          <body name="link3" pos="0 -0.316 0" quat="1 1 0 0">
+            <inertial pos="0.0407016 -0.00482006 -0.0289731" quat="0.921025 -0.244161 0.155272 0.260745" mass="2.2449"
+              diaginertia="0.0267409 0.0189869 0.0171587"/>
+            <joint name="joint3" axis="0 0 1" range="-2.9007 2.9007" actuatorfrcrange="-87 87"/>
+            <geom mesh="link3_0" material="white" class="no_contact"/>
+            <geom mesh="link3_1" material="black" class="no_contact"/>
+            <geom class="contact" mesh="link3_coll"/>
+            <body name="link4" pos="0.0825 0 0" quat="1 1 0 0">
+              <inertial pos="-0.0459101 0.0630493 -0.00851879" quat="0.438018 0.803311 0.00937812 0.403414"
+                mass="2.6156" diaginertia="0.05139 0.0372717 0.0160047"/>
+              <joint name="joint4" axis="0 0 1" range="-3.0421 -0.1518" actuatorfrcrange="-87 87"/>
+              <geom mesh="link4_0" material="white" class="no_contact"/>
+              <geom mesh="link4_1" material="black" class="no_contact"/>
+              <geom class="contact" mesh="link4_coll"/>
+              <body name="link5" pos="-0.0825 0.384 0" quat="1 -1 0 0">
+                <inertial pos="-0.00160396 0.0292536 -0.0972966" quat="0.919031 0.125604 0.0751531 -0.366003"
+                  mass="2.32712" diaginertia="0.0579335 0.0449144 0.0130634"/>
+                <joint name="joint5" axis="0 0 1" range="-2.8065 2.8065" actuatorfrcrange="-12 12"
+                  armature="0.074" frictionloss="0.763"/>
+                <geom mesh="link5_0" material="white" class="no_contact"/>
+                <geom mesh="link5_1" material="white" class="no_contact"/>
+                <geom mesh="link5_2" material="black" class="no_contact"/>
+                <geom class="contact" mesh="link5_coll"/>
+                <body name="link6" quat="1 1 0 0">
+                  <inertial pos="0.0597131 -0.0410295 -0.0101693" quat="0.621301 0.552665 0.510011 0.220081"
+                    mass="1.81704" diaginertia="0.0175039 0.0161123 0.00193529"/>
+                  <joint name="joint6" axis="0 0 1" range="0.5445 4.5169" actuatorfrcrange="-12 12"
+                    armature="0.074" frictionloss="0.44"/>
+                  <geom mesh="link6_0" material="button_green" class="no_contact"/>
+                  <geom mesh="link6_1" material="white" class="no_contact"/>
+                  <geom mesh="link6_2" material="white" class="no_contact"/>
+                  <geom mesh="link6_3" material="gray" class="no_contact"/>
+                  <geom mesh="link6_4" material="button_red" class="no_contact"/>
+                  <geom mesh="link6_5" material="white" class="no_contact"/>
+                  <geom mesh="link6_6" material="black" class="no_contact"/>
+                  <geom mesh="link6_7" material="button_blue" class="no_contact"/>
+                  <geom class="contact" mesh="link6_coll"/>
+                  <body name="link7" pos="0.088 0 0" quat="1 1 0 0">
+                    <inertial pos="0.00452258 0.00862619 -0.0161633" quat="0.727579 0.0978688 -0.24906 0.63168"
+                      mass="0.627143" diaginertia="0.000223836 0.000223642 5.64132e-07"/>
+                    <joint name="joint7" axis="0 0 1" range="-3.0159 3.0159" actuatorfrcrange="-12 12"
+                      armature="0.074" frictionloss="0.248"/>
+                    <geom mesh="link7_0" material="black" class="no_contact"/>
+                    <geom mesh="link7_1" material="white" class="no_contact"/>
+                    <geom mesh="link7_2" material="white" class="no_contact"/>
+                    <geom mesh="link7_3" material="black" class="no_contact"/>
+                    <geom class="contact" mesh="link7_coll"/>
+
+                    <!-- Flange frame (massless, = franka_description fr3_link8). -->
+                    <body name="flange" pos="0 0 0.107">
+                      <!-- Robotiq 2F-85, DROID mount: not turned about the flange z
+                           axis, so the fingers close along the flange y axis and
+                           approach along its z axis. CHECK on your rig: if the
+                           coupling is mounted at another angle, change this quat and
+                           rerun urdf/make_fr3_robotiq_urdf.py. -->
+                      <body name="gripper" childclass="robotiq">
+                        <!-- Tool centre point between the pad faces at a ~55 mm opening
+                             (the pads ride on an arc: 8 mm lower fully open, 5 mm
+                             higher closed). Massless. -->
+                        <body name="tcp" pos="0 0 0.15"/>
+                        <!-- Coupling turned +90 deg so the 2F-85's closing axis (its
+                             base y after the base's own -90 deg) is the flange y. -->
+                        <body name="robotiq_base_mount" pos="0 0 0.007" quat="0.7071068 0 0 0.7071068">
+                          <!-- Coupling; mass so the whole gripper is 0.925 kg. -->
+                          <inertial mass="0.025" pos="0 0 0.004" diaginertia="2e-5 2e-5 3e-5"/>
+                          <geom class="robotiq_visual" mesh="robotiq_base_mount" material="robotiq_black"/>
+                          <geom class="robotiq_collision" mesh="robotiq_base_mount"/>
+                          <body name="robotiq_base" pos="0 0 0.0038" quat="1 0 0 -1">
+                            <inertial mass="0.777441" pos="0 -2.70394e-05 0.0354675" quat="1 -0.00152849 0 0"
+                              diaginertia="0.000260285 0.000225381 0.000152708"/>
+                            <geom class="robotiq_visual" mesh="robotiq_base" material="robotiq_black"/>
+                            <geom class="robotiq_collision" mesh="robotiq_base"/>
+                            <!-- Right four-bar linkage -->
+                            <body name="robotiq_right_driver" pos="0 0.0306011 0.054904">
+                              <inertial mass="0.00899563" pos="2.96931e-12 0.0177547 0.00107314"
+                                quat="0.681301 0.732003 0 0" diaginertia="1.72352e-06 1.60906e-06 3.22006e-07"/>
+                              <joint name="robotiq_right_driver_joint" class="robotiq_driver"/>
+                              <geom class="robotiq_visual" mesh="robotiq_driver" material="robotiq_gray"/>
+                              <geom class="robotiq_collision" mesh="robotiq_driver"/>
+                              <body name="robotiq_right_coupler" pos="0 0.0315 -0.0041">
+                                <inertial mass="0.0140974" pos="0 0.00301209 0.0232175"
+                                  quat="0.705636 -0.0455904 0.0455904 0.705636"
+                                  diaginertia="4.16206e-06 3.52216e-06 8.88131e-07"/>
+                                <joint name="robotiq_right_coupler_joint" class="robotiq_coupler"/>
+                                <geom class="robotiq_visual" mesh="robotiq_coupler" material="robotiq_black"/>
+                                <geom class="robotiq_collision" mesh="robotiq_coupler"/>
+                              </body>
+                            </body>
+                            <body name="robotiq_right_spring_link" pos="0 0.0132 0.0609">
+                              <inertial mass="0.0221642" pos="-8.65005e-09 0.0181624 0.0212658"
+                                quat="0.663403 -0.244737 0.244737 0.663403"
+                                diaginertia="8.96853e-06 6.71733e-06 2.63931e-06"/>
+                              <joint name="robotiq_right_spring_link_joint" class="robotiq_spring_link"/>
+                              <geom class="robotiq_visual" mesh="robotiq_spring_link" material="robotiq_black"/>
+                              <geom class="robotiq_collision" mesh="robotiq_spring_link"/>
+                              <body name="robotiq_right_follower" pos="0 0.055 0.0375">
+                                <inertial mass="0.0125222" pos="0 -0.011046 0.0124786" quat="1 0.1664 0 0"
+                                  diaginertia="2.67415e-06 2.4559e-06 6.02031e-07"/>
+                                <joint name="robotiq_right_follower_joint" class="robotiq_follower"/>
+                                <geom class="robotiq_visual" mesh="robotiq_follower" material="robotiq_black"/>
+                                <geom class="robotiq_collision" mesh="robotiq_follower"/>
+                                <body name="robotiq_right_pad" pos="0 -0.0189 0.01352">
+                                  <inertial mass="0.0035" pos="0 -0.0025 0.0185" quat="0.707107 0 0 0.707107"
+                                    diaginertia="4.73958e-07 3.64583e-07 1.23958e-07"/>
+                                  <geom class="robotiq_pad_box1" name="robotiq_right_pad1"/>
+                                  <geom class="robotiq_pad_box2" name="robotiq_right_pad2"/>
+                                  <geom class="robotiq_visual" mesh="robotiq_pad"/>
+                                  <geom class="robotiq_visual" mesh="robotiq_silicone_pad" material="robotiq_black"/>
+                                  <!-- Centre of the pad's gripping face. -->
+                                  <site name="robotiq_right_pad_face" pos="0 -0.0066 0.01875" size="0.002"
+                                    rgba="0 1 0 0.5" group="4"/>
+                                </body>
+                              </body>
+                            </body>
+                            <!-- Left four-bar linkage -->
+                            <body name="robotiq_left_driver" pos="0 -0.0306011 0.054904" quat="0 0 0 1">
+                              <inertial mass="0.00899563" pos="0 0.0177547 0.00107314" quat="0.681301 0.732003 0 0"
+                                diaginertia="1.72352e-06 1.60906e-06 3.22006e-07"/>
+                              <joint name="robotiq_left_driver_joint" class="robotiq_driver"/>
+                              <geom class="robotiq_visual" mesh="robotiq_driver" material="robotiq_gray"/>
+                              <geom class="robotiq_collision" mesh="robotiq_driver"/>
+                              <body name="robotiq_left_coupler" pos="0 0.0315 -0.0041">
+                                <inertial mass="0.0140974" pos="0 0.00301209 0.0232175"
+                                  quat="0.705636 -0.0455904 0.0455904 0.705636"
+                                  diaginertia="4.16206e-06 3.52216e-06 8.88131e-07"/>
+                                <joint name="robotiq_left_coupler_joint" class="robotiq_coupler"/>
+                                <geom class="robotiq_visual" mesh="robotiq_coupler" material="robotiq_black"/>
+                                <geom class="robotiq_collision" mesh="robotiq_coupler"/>
+                              </body>
+                            </body>
+                            <body name="robotiq_left_spring_link" pos="0 -0.0132 0.0609" quat="0 0 0 1">
+                              <inertial mass="0.0221642" pos="-8.65005e-09 0.0181624 0.0212658"
+                                quat="0.663403 -0.244737 0.244737 0.663403"
+                                diaginertia="8.96853e-06 6.71733e-06 2.63931e-06"/>
+                              <joint name="robotiq_left_spring_link_joint" class="robotiq_spring_link"/>
+                              <geom class="robotiq_visual" mesh="robotiq_spring_link" material="robotiq_black"/>
+                              <geom class="robotiq_collision" mesh="robotiq_spring_link"/>
+                              <body name="robotiq_left_follower" pos="0 0.055 0.0375">
+                                <inertial mass="0.0125222" pos="0 -0.011046 0.0124786" quat="1 0.1664 0 0"
+                                  diaginertia="2.67415e-06 2.4559e-06 6.02031e-07"/>
+                                <joint name="robotiq_left_follower_joint" class="robotiq_follower"/>
+                                <geom class="robotiq_visual" mesh="robotiq_follower" material="robotiq_black"/>
+                                <geom class="robotiq_collision" mesh="robotiq_follower"/>
+                                <body name="robotiq_left_pad" pos="0 -0.0189 0.01352">
+                                  <inertial mass="0.0035" pos="0 -0.0025 0.0185" quat="1 0 0 1"
+                                    diaginertia="4.73958e-07 3.64583e-07 1.23958e-07"/>
+                                  <geom class="robotiq_pad_box1" name="robotiq_left_pad1"/>
+                                  <geom class="robotiq_pad_box2" name="robotiq_left_pad2"/>
+                                  <geom class="robotiq_visual" mesh="robotiq_pad"/>
+                                  <geom class="robotiq_visual" mesh="robotiq_silicone_pad" material="robotiq_black"/>
+                                  <site name="robotiq_left_pad_face" pos="0 -0.0066 0.01875" size="0.002"
+                                    rgba="0 1 0 0.5" group="4"/>
+                                </body>
+                              </body>
+                            </body>
+                          </body>
+                        </body>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <!-- Robotiq 2F-85 linkage (Menagerie). Contacts inside the gripper's own
+       linkage are excluded; everything else (pads, outer links) collides. -->
+  <contact>
+    <exclude body1="link7" body2="robotiq_base_mount"/>
+    <exclude body1="robotiq_base" body2="robotiq_left_driver"/>
+    <exclude body1="robotiq_base" body2="robotiq_right_driver"/>
+    <exclude body1="robotiq_base" body2="robotiq_left_spring_link"/>
+    <exclude body1="robotiq_base" body2="robotiq_right_spring_link"/>
+    <exclude body1="robotiq_right_coupler" body2="robotiq_right_follower"/>
+    <exclude body1="robotiq_left_coupler" body2="robotiq_left_follower"/>
+  </contact>
+
+  <!-- Splits the gripper drive evenly over both driver joints. -->
+  <tendon>
+    <fixed name="robotiq_split">
+      <joint joint="robotiq_right_driver_joint" coef="0.5"/>
+      <joint joint="robotiq_left_driver_joint" coef="0.5"/>
+    </fixed>
+  </tendon>
+
+  <!-- Close the two four-bar linkages and couple the two fingers. -->
+  <equality>
+    <connect anchor="0 0 0" body1="robotiq_right_follower" body2="robotiq_right_coupler"
+      solimp="0.95 0.99 0.001" solref="0.005 1"/>
+    <connect anchor="0 0 0" body1="robotiq_left_follower" body2="robotiq_left_coupler"
+      solimp="0.95 0.99 0.001" solref="0.005 1"/>
+    <joint joint1="robotiq_right_driver_joint" joint2="robotiq_left_driver_joint" polycoef="0 1 0 0 0"
+      solimp="0.95 0.99 0.001" solref="0.005 1"/>
+  </equality>
+</mujoco>

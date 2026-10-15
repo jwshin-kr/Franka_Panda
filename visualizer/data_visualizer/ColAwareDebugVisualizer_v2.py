@@ -66,7 +66,7 @@ _VSTAR_COLOR = np.array([60, 200, 255], dtype=np.uint8)  # cyan
 _EMPTY_SEG = np.zeros((1, 2, 3), dtype=np.float32)
 _SPHERE_COLOR = [165, 105, 245, 100]  # translucent purple: v2 collision spheres
 # Links the v2 controller covers with spheres (col_link_names in its YAML).
-_SPHERE_LINKS = ("link1", "link2", "link3", "link4", "link5", "link6", "link7", "hand")
+_SPHERE_LINKS = ("link1", "link2", "link3", "link4", "link5", "link6", "link7", "gripper")
 
 
 def _act_color(act: np.ndarray) -> np.ndarray:
@@ -90,7 +90,7 @@ class ColAwareDebugVisualizerV2:
         ctrl_channel: str = "sw_franka_arm_hand_joint_ctrl",
         debug_channel: str = "sw_col_aware_debug_v2",
         num_arm_joints: int = 7,
-        num_joints: int = 9,
+        num_joints: int = 8,
         ctrl_dt: float = 0.001,
         kp_multiplier: float = 1.0,
         kd_nominal_joint1: float = 20.0,
@@ -184,10 +184,11 @@ class ColAwareDebugVisualizerV2:
         if mesh_dir:
             fk_kwargs["mesh_dir"] = mesh_dir
         self._fk = URDF.load(urdf_path, **fk_kwargs)
-        # ghost = moving chain only (link1..link7 + hand); hide base/enclosure
-        moving = {f"link{i}" for i in range(1, 8)} | {"hand"}
+        # ghost = moving chain only (link1..link7 + gripper); hide base/enclosure
+        moving = {f"link{i}" for i in range(1, 8)} | {"gripper"}
         for mesh in self._ghost._meshes:
-            if not any(part in moving for part in str(mesh.name).split("/")):
+            parts = str(mesh.name).split("/")
+            if not any(p in moving or p.startswith("robotiq_") for p in parts):
                 mesh.visible = False
         self._ghost.show_visual = False
         self._ghost_on = False

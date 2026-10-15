@@ -61,6 +61,12 @@ BridgeConfig BridgeConfig::LoadFromFile(const std::string& path)
         cfg.robot.cutoff_frequency = robot["cutoff_frequency"]
             ? robot["cutoff_frequency"].as<double>()
             : cfg.robot.cutoff_frequency;
+        cfg.robot.move_to_start = robot["move_to_start"]
+            ? robot["move_to_start"].as<bool>()
+            : cfg.robot.move_to_start;
+        cfg.robot.move_to_start_max_vel = robot["move_to_start_max_vel"]
+            ? robot["move_to_start_max_vel"].as<double>()
+            : cfg.robot.move_to_start_max_vel;
 
         if (robot["collision_behavior"]) {
             const auto collision = robot["collision_behavior"];
@@ -130,6 +136,9 @@ BridgeConfig BridgeConfig::LoadFromFile(const std::string& path)
     }
     if (cfg.safety.hold_kd.size() != cfg.mapping.num_arm_joints) {
         throw std::runtime_error("hold_kd must have num_arm_joints entries.");
+    }
+    if (cfg.robot.move_to_start_max_vel <= 0.0 || cfg.robot.move_to_start_max_vel > 1.0) {
+        throw std::runtime_error("robot.move_to_start_max_vel must be in (0, 1] rad/s.");
     }
     if (cfg.robot.lower_torque_thresholds.size() != 7 ||
         cfg.robot.upper_torque_thresholds.size() != 7) {

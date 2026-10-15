@@ -1,0 +1,17 @@
+<robot name="franka_fr3">
+  <link name="world" />
+  <!-- @ROBOT@ -->
+  <joint name="world_to_enclosure" type="fixed">
+    <parent link="world" />
+    <child link="enclosure" />
+    <origin rpy="1.570000124 0 0" xyz="-0.293 0.482 -0.091" />
+  </joint>
+  <link name="enclosure">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="../cell/enclosure_decimated.STL" scale="0.001 0.001 0.001" />
+      </geometry>
+    </visual>
+  </link>
+</robot>

@@ -42,6 +42,9 @@ private:
     // rethrown on the bridge thread so the bridge exits.
     void RethrowControlError() const;
     ArmState ToArmState(const ::franka::RobotState& state) const;
+    // Joint-space move to q_goal with the robot's own joint position
+    // controller (blocks until there; throws on a reflex / user stop).
+    void MoveToStart(const std::vector<double>& q_goal, double max_vel);
 
     bool mock_mode_ = true;
     bool enable_gravity_comp_ = true;

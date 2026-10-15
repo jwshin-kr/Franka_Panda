@@ -18,9 +18,9 @@ def get_sim_platform(
     name = cfg_platform["name"]
     cfg = OmegaConf.merge(cfg_platform, cfg_sub_manager, cfg_pub_manager)
 
-    if name == "franka_panda":
-        from robot_platform.sim.franka_panda.SimFrankaPanda import SimFrankaPanda
+    if name == "franka_fr3":
+        from robot_platform.sim.franka_fr3.SimFrankaFR3 import SimFrankaFR3
 
-        return SimFrankaPanda(**cfg)
+        return SimFrankaFR3(**cfg)
 
     raise ValueError(f"Unknown platform name: {name}")

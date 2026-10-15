@@ -37,6 +37,12 @@ struct RobotConfig {
         std::vector<double>(6, 20.0);
     std::vector<double> upper_force_thresholds =
         std::vector<double>(6, 20.0);
+    // On start (before torque control), move to SafetyConfig::default_hold_q
+    // with the robot's own joint position controller: a quintic (zero velocity
+    // and acceleration at both ends) whose peak joint speed is
+    // move_to_start_max_vel (rad/s).
+    bool move_to_start = true;
+    double move_to_start_max_vel = 0.3;
 };
 
 struct LoopConfig {
@@ -64,7 +70,7 @@ struct SafetyConfig {
 };
 
 struct BridgeConfig {
-    std::string name = "franka_panda_arm";
+    std::string name = "franka_fr3_arm";
     RobotConfig robot;
     LoopConfig loop;
     LcmConfig lcm;

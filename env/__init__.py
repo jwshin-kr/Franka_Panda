@@ -14,8 +14,8 @@ def get_env(cfg_env: DictConfig) -> BaseEnv:
 
         return MujocoBaseEnv(cfg_env)
 
-    if name == "franka_panda_col":
-        from env.franka_panda.FrankaArmHandColEnv import FrankaArmHandColEnv
+    if name == "franka_fr3_col":
+        from env.franka_fr3.FrankaArmHandColEnv import FrankaArmHandColEnv
 
         return FrankaArmHandColEnv(cfg_env)
 

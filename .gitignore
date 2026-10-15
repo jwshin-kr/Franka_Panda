@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 MUJOCO_LOG.TXT
+
+# C++ bridge build
+communication/franka/build/

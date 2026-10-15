@@ -37,14 +37,17 @@ def run_hardware(cfg_platform: DictConfig):
     # this will spin off a thread for the publisher
     pub.start()
 
-    # We run the environment in the original thread
-    hardware_platform.initialize()
-    hardware_platform.start()
-
-    # this will safely terminate the subscriber thread
-    pub.stop()
-    # this will safely terminate the publisher thread
-    sub.stop()
+    # We run the environment in the original thread. The LCM threads are
+    # stopped also when initialize() fails (e.g. the bridge exits during
+    # start-up); otherwise the process hangs on exit.
+    try:
+        hardware_platform.initialize()
+        hardware_platform.start()
+    finally:
+        # this will safely terminate the publisher thread
+        pub.stop()
+        # this will safely terminate the subscriber thread
+        sub.stop()
     # hardware_platform.stop()
 
 

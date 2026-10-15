@@ -21,7 +21,7 @@ void HandleSignal(int /*signum*/)
 int main(int argc, char** argv)
 {
     const std::string default_config =
-        "configs/franka_panda/hardware/bridge.yaml";
+        "configs/franka_fr3/hardware/bridge.yaml";
     const std::string config_path = (argc > 1) ? argv[1] : default_config;
 
     std::signal(SIGINT, HandleSignal);

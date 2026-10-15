@@ -16,11 +16,11 @@ class ArmHandSubManager(BaseControllerSubManager):
     def __init__(
         self,
         arm_joint_meas_channel: str = "sw_franka_arm_joint_meas",
-        hand_joint_meas_channel: str = "sw_franka_hand_joint_meas",
+        hand_joint_meas_channel: str = "sw_franka_gripper_joint_meas",
         gains_cmd_channel: str = "",
         num_arm_joints: int = 7,
-        num_hand_joints: int = 2,
-        num_joints: int = 9,
+        num_hand_joints: int = 1,
+        num_joints: int = 8,
         *args,
         **kwargs,
     ):

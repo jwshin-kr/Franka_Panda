@@ -13,11 +13,11 @@ def get_vis_manager(cfg_vis_manager: DictConfig) -> BaseVisManager:
     """
     if cfg_vis_manager["name"] == "base":
         return BaseVisManager(cfg_vis_manager)
-    elif cfg_vis_manager["name"].startswith("franka_panda"):
-        from visualizer.vis_manager.franka_panda.FrankaPandaVisManager import (
-            FrankaPandaVisManager,
+    elif cfg_vis_manager["name"].startswith("franka_fr3"):
+        from visualizer.vis_manager.franka_fr3.FrankaFR3VisManager import (
+            FrankaFR3VisManager,
         )
 
-        return FrankaPandaVisManager(cfg_vis_manager)
+        return FrankaFR3VisManager(cfg_vis_manager)
     else:
         raise ValueError(f"Visualizer manager {cfg_vis_manager['name']} not found.")

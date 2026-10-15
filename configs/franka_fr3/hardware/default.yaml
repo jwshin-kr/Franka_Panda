@@ -1,0 +1,66 @@
+# run_hardware.py config for the real Franka Research 3 + Robotiq 2F-85, the DROID
+# setup (HardwareFrankaFR3). The arm runs in the C++ bridge (bridge.yaml),
+# the gripper in Python (Modbus RTU over its USB adapter).
+#
+# Mock mode: bridge.yaml robot.mock_mode (true by default) also puts the
+# gripper in mock mode (hand.mock_mode below), so this whole config runs with
+# no robot and no gripper connected.
+name: franka_fr3
+
+# Rate of the gripper command + gripper joint_meas publish (Hz).
+hardware_freq: 1000
+
+# Dry-run: read and publish the gripper but never command it.
+read_only: false
+
+# Only commands newer than this (s) move the gripper; otherwise it holds its
+# last target (it never opens on its own).
+ctrl_timeout: 0.5
+
+arm:
+  bridge_binary: communication/franka/build/franka_bridge
+  bridge_config: configs/franka_fr3/hardware/bridge.yaml
+  # where libfranka.so lives (prepended to LD_LIBRARY_PATH for the bridge)
+  bridge_ld_library_path: ~/libfranka/build
+
+hand:
+  # Robotiq 2F-85 USB / RS-485 adapter: a device on this computer
+  # (/dev/ttyUSB0), or a pyserial URL when it is plugged into another one. In
+  # the DROID cell it is on the NUC (192.168.0.127), bridged to TCP there:
+  #   python3 -m serial.tools.tcp_serial_redirect -P 5020 /dev/ttyUSB0 115200
+  port: socket://192.168.0.127:5020
+  # null: same as bridge.yaml robot.mock_mode. true: simulated gripper.
+  mock_mode: null
+  # The 2F-85 only takes position targets (driver angle q_des, rad).
+  control_mode: POSITION_CONTROL
+  speed: 0.1        # m/s finger speed (0.02 .. 0.15)
+  force: 50.0       # N grip force (20 .. 235)
+  io_freq: 50.0     # Hz, Modbus write + status read
+  pos_tol: 1        # register steps (of 255); smaller target changes are not sent
+  # Activate at start if it is not yet (after power-up). Activation fully
+  # closes and opens the fingers once: keep them clear.
+  activate: true
+  # true: measure the open / closed register positions at start (fingers
+  # close + open once). false: typical values 3 / 230.
+  calibrate_stroke: false
+
+# Collision geometry for the collision-aware controllers (tutorials 05 / 06),
+# published like the franka_fr3_col env does in the sim. CHECK: the static
+# obstacles (floor / wall_* / table* / obs_* geoms of scene_xml_path) must
+# match YOUR real cell; they are what keeps the arm away from it.
+col_info:
+  scene_xml_path: assets/scene/franka_fr3/fr3_default.xml
+  col_info_update_dt: 0.1
+
+sub_manager:
+  name: joint
+  ctrl_channel: hw_franka_arm_hand_joint_ctrl
+  num_joints: 8
+  max_sub_freq: 2000
+
+pub_manager:
+  name: franka_fr3_hw
+  hand_joint_meas_channel: hw_franka_gripper_joint_meas
+  robot_col_info_channel: hw_franka_arm_hand_robot_col_info
+  static_col_info_channel: hw_franka_arm_hand_static_col_info
+  max_pub_freq: 2000

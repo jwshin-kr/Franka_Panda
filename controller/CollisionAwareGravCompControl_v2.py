@@ -466,6 +466,7 @@ class CollisionAwareGravCompControllerV2(CollisionAwareGravCompController):
         tau_ff = pin.computeGeneralizedGravity(self._pin_model, self._pin_data_ctrl, q)
         tau_ff[:7] += -0.01 * qd[:7]
 
+        q_des = self._with_gripper_set_point(q_des)
         cmd = JointCtrlData(num_joints=self._num_joints)
         cmd.set_data(self._cur_time, q_des, qd_des, tau_ff,
                      self._alpha * self._kp, self._alpha * self._kd)

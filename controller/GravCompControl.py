@@ -73,7 +73,7 @@ class GravCompController(BaseController):
         cmd = JointCtrlData(num_joints=self._num_joints)
         cmd.set_data(
             self._cur_time,
-            self._q.copy(),
+            self._with_gripper_set_point(self._q),
             np.zeros(self._num_joints),
             tau_ff,
             np.zeros(self._num_joints),

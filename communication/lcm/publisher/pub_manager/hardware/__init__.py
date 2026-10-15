@@ -13,11 +13,11 @@ def get_hardware_pub_manager(cfg_pub_manager: DictConfig) -> BasePubManager:
     if name == "base":
         return BasePubManager(**cfg_pub_manager)
 
-    elif name == "franka_hand":
-        from communication.lcm.publisher.pub_manager.hardware.franka_panda.FrankaHandHwPubManager import (
-            FrankaHandHwPubManager,
+    elif name == "franka_fr3_hw":
+        from communication.lcm.publisher.pub_manager.hardware.franka_fr3.FrankaFR3HwPubManager import (
+            FrankaFR3HwPubManager,
         )
 
-        return FrankaHandHwPubManager(**cfg_pub_manager)
+        return FrankaFR3HwPubManager(**cfg_pub_manager)
 
     raise ValueError(f"Publisher manager {name} not found.")

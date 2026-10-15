@@ -32,13 +32,13 @@ class ArmHandColInfoSubManager(BaseControllerSubManager):
     def __init__(
         self,
         arm_joint_meas_channel: str = "sw_franka_arm_joint_meas",
-        hand_joint_meas_channel: str = "sw_franka_hand_joint_meas",
+        hand_joint_meas_channel: str = "sw_franka_gripper_joint_meas",
         static_col_info_channel: str = "sw_franka_arm_hand_static_col_info",
         robot_col_info_channel: str = "sw_franka_arm_hand_robot_col_info",
         gains_cmd_channel: str = "",
         num_arm_joints: int = 7,
-        num_hand_joints: int = 2,
-        num_joints: int = 9,
+        num_hand_joints: int = 1,
+        num_joints: int = 8,
         *args,
         **kwargs,
     ):

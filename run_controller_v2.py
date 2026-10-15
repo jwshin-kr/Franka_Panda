@@ -3,18 +3,22 @@
 The controller / pub-manager factories are left untouched, so this runner builds
 the v2 classes directly (any other controller name falls back to the factories).
 
-    python run_controller_v2.py --config configs/franka_panda/controllers/col_aware_grav_comp_v2.yaml
+    python run_controller_v2.py --config configs/franka_fr3/controllers/col_aware_grav_comp_v2.yaml
 
 Reproduce the original behaviour (each cause visible in run_visualizer_v2.py):
 
-    python run_controller_v2.py --config configs/franka_panda/controllers/col_aware_grav_comp_v2.yaml \
+    python run_controller_v2.py --config configs/franka_fr3/controllers/col_aware_grav_comp_v2.yaml \
         --v2.fix_fresh_state false --v2.fix_multi_point_witness false --v2.fix_smooth_command false
 
 (overrides are space separated ``--key value``, one fix at a time also works)
 
+Tutorials 01-03 v2 (gravity comp, stale-LCM-data fix only), e.g. on the robot:
+
+    python run_controller_v2.py --config configs/franka_fr3/controllers/grav_comp_hw.yaml
+
 Tutorial 06 v2 (IK QP, stale-LCM-data fix only) reuses the original yaml:
 
-    python run_controller_v2.py --config configs/franka_panda/controllers/ik_qp.yaml --name ik_qp_v2
+    python run_controller_v2.py --config configs/franka_fr3/controllers/ik_qp.yaml --name ik_qp_v2
 """
 
 import argparse
@@ -38,6 +42,10 @@ def build_controller(cfg: DictConfig):
         )
 
         return CollisionAwareGravCompControllerV2(cfg)
+    if cfg["name"] == "grav_comp_v2":
+        from controller.GravCompControl_v2 import GravCompControllerV2
+
+        return GravCompControllerV2(cfg)
     if cfg["name"] == "ik_qp_v2":
         from controller.IKQPControl_v2 import IKQPControllerV2
 
@@ -68,12 +76,16 @@ def run_controller(cfg_controller: DictConfig):
     sub.start()
     pub.start()
 
-    controller.initialize()
-    controller.start()
-
-    sub.stop()
-    pub.stop()
-    controller.stop()
+    # Stop the LCM threads also when initialize() fails or is interrupted
+    # (e.g. Ctrl-C while waiting for collision info); otherwise the process
+    # hangs on exit.
+    try:
+        controller.initialize()
+        controller.start()
+    finally:
+        sub.stop()
+        pub.stop()
+        controller.stop()
 
 
 if __name__ == "__main__":
