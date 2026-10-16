@@ -26,4 +26,18 @@ def get_env_pub_manager(cfg_pub_manager: DictConfig) -> BasePubManager:
 
         return FrankaArmHandColInfoPubManager(**cfg_pub_manager)
 
+    elif name == "franka_arm_hand_cam":
+        from communication.lcm.publisher.pub_manager.env.franka_fr3.FrankaArmHandCamPubManager import (
+            FrankaArmHandCamPubManager,
+        )
+
+        return FrankaArmHandCamPubManager(**cfg_pub_manager)
+
+    elif name == "franka_arm_hand_col_cam":
+        from communication.lcm.publisher.pub_manager.env.franka_fr3.FrankaArmHandColCamPubManager import (
+            FrankaArmHandColCamPubManager,
+        )
+
+        return FrankaArmHandColCamPubManager(**cfg_pub_manager)
+
     raise ValueError(f"Publisher manager {name} not found.")

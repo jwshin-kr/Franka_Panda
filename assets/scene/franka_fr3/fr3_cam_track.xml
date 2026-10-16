@@ -1,0 +1,26 @@
+<mujoco model="franka_fr3_cam_track">
+  <!-- Tutorial 14 calibration scene (robot, cell, calib_camera) unchanged, plus
+       one target cube for click-and-track pointing. -->
+  <include file="fr3_cam_calib.xml"/>
+
+  <asset>
+    <!-- Two-colour checker with random dots: corners and texture give the point
+         tracker (TAPIR) something to lock on to. -->
+    <texture name="track_target_tex" type="cube" builtin="checker"
+             rgb1="0.85 0.15 0.1" rgb2="0.95 0.8 0.15" width="64" height="64"
+             mark="random" random="0.03" markrgb="1 1 1"/>
+    <material name="track_target_mat" texture="track_target_tex"/>
+  </asset>
+
+  <worldbody>
+    <!-- Mocap body: drag it in the MuJoCo viewer (double-click to select,
+         Ctrl + right drag to move, Ctrl + left drag to rotate). It stays where
+         it is left, in 3D, and is visual only (contype/conaffinity 0): it never
+         pushes or is pushed by the robot, and it is not a static obstacle for
+         the controller (only floor / wall_* / table* / obs_* geoms are). -->
+    <body name="track_target" mocap="true" pos="0.4 -0.1 0.0">
+      <geom name="track_target" type="box" size="0.04 0.04 0.04"
+            material="track_target_mat" contype="0" conaffinity="0"/>
+    </body>
+  </worldbody>
+</mujoco>

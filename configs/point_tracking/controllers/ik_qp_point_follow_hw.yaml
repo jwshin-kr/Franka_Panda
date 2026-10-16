@@ -1,0 +1,212 @@
+# Click-and-track pointing on the REAL Franka Research 3 + Robotiq 2F-85: IK QP v2
+# (configs/franka_fr3/controllers/ik_qp_hw.yaml) with the 3D target taken from
+# perception (point_channel). Same as ik_qp_hw.yaml except name, point_follow
+# (new; more conservative than the sim: 15 cm above the point, target at least
+# 10 cm above the base plane, jump rejection) and sub_manager (adds point_channel).
+#
+#   python run_hardware.py --config configs/franka_fr3/hardware/default.yaml
+#   python run_sensors.py --config configs/sensors/realsense/one_realsense.yaml
+#   python run_controller_v2.py --config configs/point_tracking/controllers/ik_qp_point_follow_hw.yaml
+#   python run_perception.py --config configs/point_tracking/perception/tapnet_click_and_track_hw.yaml
+#   python run_visualizer.py --config configs/visualizer/franka_fr3/ik_qp_hw.yaml
+name: ik_qp_point_follow
+ctrl_freq: 1000
+env_mode: real
+
+urdf_path: assets/scene/franka_fr3/urdf/fr3_robotiq.urdf
+mesh_path:
+  path_1: assets/scene/franka_fr3
+  path_2: assets/scene/franka_fr3/fr3
+  path_3: assets/scene/franka_fr3/cell
+  path_4: assets/scene/franka_fr3/robotiq
+
+num_joints: 8
+default_q_values: [
+  0.0, 0.0, 0.0, -1.5707963, 0.0, 1.5707963, 0.0,
+  0.0,
+]
+
+# Task-space point: URDF/MJCF tcp frame (Robotiq 2F-85 TCP between the pads,
+# 0.15 m along the flange z axis; fixed to the gripper base, so the gripper
+# joint has no effect on it).
+task_link: tcp
+task_point_local: [0.0, 0.0, 0.0]
+
+# Contracting field: v* = vel_gain*(p_des-p) - cart_damping*p_dot, clipped.
+vel_gain: 3.0
+cart_damping: 0.1
+v_max: 0.15
+pos_tol: 0.005
+# Control loop runs at ctrl_freq; FCL+OSQP run on a side thread at plan_freq.
+# Keeping plan << ctrl avoids missed ticks / burst catch-up freak-outs.
+plan_freq: 100
+qd_filter: 0.25          # low-pass on qd_des in the control thread (1 = raw)
+qp_reg: 0.01
+plan_horizon: 0.05
+# When d < d_safe, cap the demanded gap-opening speed (m/s) so the QP stays feasible.
+col_sep_rate_max: 0.25
+use_position_pd: false   # velocity tracking with velocity_control_D_gain
+
+# v2 only (run_controller_v2.py, name ik_qp_v2): exact convergence. The QP's
+# qd_des is integrated into a joint reference q_ref, tracked with
+#   tau = ref_kp (q_ref - q) + ref_kd (qd_des - qd) + g + C qd + friction.
+# While the tip is off target the Cartesian field keeps advancing q_ref, so
+# friction cannot stop it short; at the target the arm is held at q_ref.
+track_reference: true
+ref_pos_tol: 0.0002      # m, replaces pos_tol (5 mm) in v2
+ref_vel_gain: 10.0       # 1/s, replaces vel_gain (3) in v2: fast approach, through the joint friction
+ref_v_max: 0.3           # m/s, replaces v_max (0.15) in v2: tip speed cap
+ref_qd_max_acc: 6.0      # rad/s^2, smooths qd_des for the stiff joint impedance (keeps the torque rate < 1000 Nm/s)
+ref_max_error: 0.05      # rad, |q_ref - q| clamp (anti-windup, bounds the spring torque)
+ref_kp: [
+  200.0, 200.0, 200.0, 200.0, 100.0, 60.0, 30.0,
+  0.0,
+]
+# ref_kd ~ 2 sqrt(ref_kp * M_jj) (critical damping with mean_mass_matrix_diag):
+# with less damping the arm swings past the reference on fast moves.
+ref_kd: [
+  40.0, 50.0, 40.0, 35.0, 8.0, 6.0, 3.0,
+  0.0,
+]
+
+# Joint-space home (key "h")
+joint_vel_gain: 1.0
+joint_damping: 0.5
+joint_pos_tol: 0.02
+
+# Keyboard nudging of p_des (m per keypress).
+target_step: 0.01
+target_step_min: 0.002
+target_step_max: 0.05
+
+# ---------------------------------------------------------------------------
+# Gains (ThreeFingerReactiveGrasping style)
+#   kp = default_kd^2 / (4 * mean_mass_matrix_diag)   # critical damping
+#   require M - delay*kd > 0 and kd - kp*delay > 0
+# Velocity mode uses velocity_control_D_gain with kp=0.
+#
+# mean_mass_matrix_diag = diag(M(q)) from MuJoCo mj_fullM at default_q on
+# fr3_default.xml (rigid-body inertia + joint armature), with the Robotiq
+# 2F-85 (0.925 kg) on the flange. Arm joint armature from fr3_robot.xml
+# (Menagerie FR3: 0.195 joints 1-4, 0.074 joints 5-7); the gripper entry is
+# the driver joint (armature 0.005).
+# The gripper is position controlled (sim and hardware track its q_des and
+# ignore its gains), so its gains below only need to pass the checks above.
+# ---------------------------------------------------------------------------
+est_time_delay: 0.01
+mean_mass_matrix_diag: [
+  1.7099, 3.0518, 1.6772, 1.2455, 0.1258, 0.1365, 0.0746,
+  0.005,
+]
+default_kd: [
+  5.0, 8.0, 2.0, 2.0, 1.0, 1.0, 0.2,
+  0.05,
+]
+velocity_control_D_gain: [
+  5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0,
+  0.0,
+]
+
+# Coulomb friction FF: tau += Fjc * sat(qd_des / friction_phi).
+# Fjc sized to the MJCF frictionloss of the FR3 joints (fr3_robot.xml,
+# Menagerie FR3 identification); the gripper is position controlled (0).
+do_grav_comp: true
+do_friction_comp: true
+do_coriolis_comp: true
+friction_phi: 0.03
+# v2 only: max change rate of the friction feedforward (Nm/s), so it never
+# steps (libfranka limits the commanded torque rate to 1000 Nm/s).
+friction_rate_max: 100.0
+Fjc: [
+  1.137, 1.137, 1.137, 1.137, 0.763, 0.44, 0.248,
+  0.0,
+]
+Fmc: [
+  0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
+  0.01,
+]
+alpha_Fjc: [
+  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+  0.0,
+]
+alpha_Fmc: [
+  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+  0.0,
+]
+
+joint_velocity_limit: [2, 2, 2, 2, 2, 2, 2,
+                       1.5]
+
+safty_dist_thr: 0.02
+
+col_link_names: ["link1", "link2", "link3", "link4", "link5", "link6", "link7", "gripper"]
+obs_names: ["floor", "wall_back", "wall_left"]
+col_pairs:
+  - ["link2", "wall_back"]
+  - ["link2", "wall_left"]
+  - ["link3", "wall_back"]
+  - ["link3", "wall_left"]
+  - ["link3", "floor"]
+  - ["link4", "wall_back"]
+  - ["link4", "wall_left"]
+  - ["link4", "floor"]
+  - ["link5", "wall_back"]
+  - ["link5", "wall_left"]
+  - ["link5", "floor"]
+  - ["link6", "wall_back"]
+  - ["link6", "wall_left"]
+  - ["link6", "floor"]
+  - ["link7", "wall_back"]
+  - ["link7", "wall_left"]
+  - ["link7", "floor"]
+  - ["gripper", "wall_back"]
+  - ["gripper", "wall_left"]
+  - ["gripper", "floor"]
+
+# Robotiq 2F-85 set-point: q_des of the gripper slot (driver angle, rad:
+# 0 = open .. 0.8 = closed). The gripper is position controlled, so its q_des
+# always carries this set-point instead of following the measurement.
+gripper_joint_idx: [7]
+gripper_q_des: [0.0]
+# o / c keys
+gripper_q_open: 0.0
+gripper_q_close: 0.8
+
+dict_joints:
+  arm:
+    joint_meas_channel: hw_franka_arm_joint_meas
+    list_joint_idx: [0, 1, 2, 3, 4, 5, 6]
+  gripper:
+    joint_meas_channel: hw_franka_gripper_joint_meas
+    list_joint_idx: [7]
+
+point_follow:
+  enabled: true            # key 't' toggles
+  # target = tracked point + offset (base frame, m): 15 cm above the point
+  offset: [0.0, 0.0, 0.15]
+  # safety clamp of the target: box (CHECK: inside YOUR cell, above the table) ...
+  workspace_min: [0.1, -0.3, 0.10]
+  workspace_max: [0.8, 0.6, 0.9]
+  # ... and reach sphere around joint 2 (FR3 reach ~0.85 m)
+  reach_center: [0.0, 0.0, 0.333]
+  reach_radius: 0.75
+  filter_tau: 0.1          # s, low-pass on the target (pixel / depth jitter)
+  timeout: 0.5             # s without a point -> hold the last target
+  max_jump: 0.15           # m, ignore target jumps larger than this ...
+  jump_accept_after: 0.5   # s, ... unless the jump persists this long
+  print_dt: 1.0            # s between status prints
+
+sub_manager:
+  name: arm_hand_joint_col_info_point
+  point_channel: click_and_point
+  arm_joint_meas_channel: hw_franka_arm_joint_meas
+  hand_joint_meas_channel: hw_franka_gripper_joint_meas
+  static_col_info_channel: hw_franka_arm_hand_static_col_info
+  robot_col_info_channel: hw_franka_arm_hand_robot_col_info
+  num_arm_joints: 7
+  num_hand_joints: 1
+
+pub_manager:
+  name: joint_ctrl_pose
+  ctrl_channel: hw_franka_arm_hand_joint_ctrl
+  pose_channel: hw_ik_target_pose

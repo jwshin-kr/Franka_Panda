@@ -1,0 +1,77 @@
+# run_sensors.py config: one RealSense, fixed in the FR3 cell (RoPhiTutorial
+# configs/sensors/realsense/one_realsense.yaml, same keys).
+#
+#   python run_sensors.py --config configs/sensors/realsense/one_realsense.yaml [--visualize]
+#
+# mock_mode: true replaces the camera by a MuJoCo render of the cell at the
+# robot's measured joints (MockRealSense, see `mock` below): same channel, same
+# RGBD / camera_info format, no camera and no pyrealsense2 needed.
+name: realsense
+num_sensors: 1
+info_pub_freq: 30
+
+mock_mode: false
+
+realsense:
+  d455_1:
+    # CHECK: serial + intrinsics of YOUR camera (these are RoPhiTutorial's
+    # d455_1). Serial and colour intrinsics at 640x480:
+    #   python -c "import pyrealsense2 as rs; p=rs.pipeline(); c=rs.config(); c.enable_stream(rs.stream.color,640,480,rs.format.bgr8,30); i=p.start(c).get_stream(rs.stream.color).as_video_stream_profile().get_intrinsics(); print(p.get_active_profile().get_device().get_info(rs.camera_info.serial_number), i.fx, i.fy, i.ppx, i.ppy)"
+    serial: 031422250290
+    fixed: True
+    attached_body: "world"
+    frequency: 30
+
+    width: 640
+    height: 480
+    fx: 381.33
+    fy: 381.33
+    cx: 319.235
+    cy: 237.902
+
+    # depth_value / depth_factor = depth in meters (RealSense z16: mm)
+    depth_factor: 1000
+    # In fixed mode, the extrinsic world (= robot base) -> camera, OpenCV
+    # camera frame: published in camera_info, used as the starting guess of the
+    # tutorial 14 calibration and, without a calibration file, by perception.
+    # CHECK: rough pose of YOUR camera, e.g. from
+    #   python -m utils.calibration.eyeball_camera_pose --eye X Y Z --look_at X Y Z
+    # then, after calibrating, the tf_link_to_cam printed by
+    # run_camera_calibration_v2.py. Placeholder: the sim calib_camera
+    # (eye [0.85, 0.55, 0.70] m in the base frame, looking at the robot).
+    tf_link_to_cam:
+      quaternion: [0.341587, 0.772224, -0.489922, 0.216713]  # [x, y, z, w]
+      translation: [0.164852, 0.207739, 1.201943]
+
+# mock_mode only: what the MuJoCo "camera" sees.
+mock:
+  # Scene and camera: the camera's pose in this scene is the "true" pose the
+  # calibration has to find (here the sim calib_camera).
+  scene_xml_path: assets/scene/franka_fr3/fr3_cam_track.xml
+  camera_name: calib_camera
+  # The robot is drawn at these measured joints (run_hardware.py, mock bridge).
+  arm_joint_meas_channel: hw_franka_arm_joint_meas
+  hand_joint_meas_channel: hw_franka_gripper_joint_meas
+  default_q: [0.0, 0.0, 0.0, -1.5707963, 0.0, 1.5707963, 0.0, 0.0]
+  # The scene's track_target cube: static, or a circle (radius m, period s)
+  # with a lift (m), starting start_delay s after run_sensors.py starts, for
+  # `cycles` turns (null: forever).
+  target:
+    motion: circle
+    start_delay: 30.0
+    radius: 0.10
+    period: 15.0
+    lift: 0.08
+    cycles: null
+
+pub_manager:
+  name: realsense
+  realsense:
+    d455_1_channel: d455_1
+  max_pub_freq: 100
+
+sub_manager:
+  name: base
+  realsense:
+    d455_1_channel: d455_1
+  max_sub_freq: 100

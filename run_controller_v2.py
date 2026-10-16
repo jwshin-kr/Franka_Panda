@@ -58,6 +58,10 @@ def build_controller(cfg: DictConfig):
         from controller.IKQPControl_v2 import IKQPControllerV2
 
         return IKQPControllerV2(cfg)
+    if cfg["name"] == "ik_qp_point_follow":
+        from controller.IKQPPointFollowControl import IKQPPointFollowController
+
+        return IKQPPointFollowController(cfg)
     return get_controller(cfg)
 
 

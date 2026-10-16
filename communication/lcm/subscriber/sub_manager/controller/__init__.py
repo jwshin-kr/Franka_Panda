@@ -27,4 +27,11 @@ def get_controller_sub_manager(cfg_sub_manager: DictConfig) -> BaseSubManager:
 
         return ArmHandColInfoSubManager(**cfg_sub_manager)
 
+    elif name == "arm_hand_joint_col_info_point":
+        from communication.lcm.subscriber.sub_manager.controller.ArmHandColInfoPointSubManager import (
+            ArmHandColInfoPointSubManager,
+        )
+
+        return ArmHandColInfoPointSubManager(**cfg_sub_manager)
+
     raise ValueError(f"Unknown subscriber manager: {name}")

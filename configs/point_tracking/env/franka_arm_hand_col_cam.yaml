@@ -1,0 +1,65 @@
+# Click-and-track pointing (sim): FR3 + Robotiq, collision info for IK QP,
+# fixed RGB-D camera (same calib_camera as tutorial 14) and a draggable target
+# cube (mocap body 'track_target': double-click, Ctrl + right drag).
+name: franka_arm_hand_col_cam
+scene_xml_path: assets/scene/franka_fr3/fr3_cam_track.xml
+
+env_mode: sim_real_time
+vis_mode: vis_on
+
+sim_steps_per_control: 1
+sim_freq: 1000
+view_freq: 30
+
+arm_joint_meas_freq: 1000
+hand_joint_meas_freq: 1000
+
+# How often the collision geometry is (re)published (s).
+col_info_update_dt: 0.1
+
+viewer_cam:
+  distance: 1.8
+  elevation: -25
+  azimuth: 50
+  lookat: [0.3, 0.1, 0.35]
+
+platform:
+  name: franka_fr3
+  # arm [0,0,0,-90,0,90,0] deg -> rad; gripper open (driver angle 0 rad).
+  default_q_values: [
+    0.0, 0.0, 0.0, -1.5707963, 0.0, 1.5707963, 0.0,
+    0.0,
+  ]
+  # Controller supplies its own gravity comp (Pinocchio); no plant-side comp.
+  gravity_comp: false
+
+sensor:
+  extrinsic:
+    calib_camera:
+      width: 640
+      height: 480
+      rgb_enable: True
+      depth_enable: True
+      frequency: 30
+      fixed: True
+      attached_body: world
+      # RealSense format: uint16 depth = round(depth_m * 1000) (mm), 0 = invalid.
+      # The perception code divides by depth_factor and drops values <= 1, so
+      # float meters (depth_factor 1.0, tutorial 14) would lose everything
+      # closer than 1 m.
+      depth_factor: 1000.0
+
+sub_manager:
+  name: joint
+  ctrl_channel: sw_franka_arm_hand_joint_ctrl
+  num_joints: 8
+  max_sub_freq: 2000
+
+pub_manager:
+  name: franka_arm_hand_col_cam
+  arm_joint_meas_channel: sw_franka_arm_joint_meas
+  hand_joint_meas_channel: sw_franka_gripper_joint_meas
+  static_col_info_channel: sw_franka_arm_hand_static_col_info
+  robot_col_info_channel: sw_franka_arm_hand_robot_col_info
+  calib_camera_channel: calib_camera
+  max_pub_freq: 2000

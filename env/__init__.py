@@ -19,4 +19,16 @@ def get_env(cfg_env: DictConfig) -> BaseEnv:
 
         return FrankaArmHandColEnv(cfg_env)
 
+    if name == "franka_arm_hand_cam":
+        from env.calibration_tutorial.FrankaArmHandCamEnv import FrankaArmHandCamEnv
+
+        return FrankaArmHandCamEnv(cfg_env)
+
+    if name == "franka_arm_hand_col_cam":
+        from env.perception_tutorial.FrankaArmHandColCamEnv import (
+            FrankaArmHandColCamEnv,
+        )
+
+        return FrankaArmHandColCamEnv(cfg_env)
+
     raise ValueError(f"Unknown environment name: {name}.")

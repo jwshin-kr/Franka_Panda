@@ -1,0 +1,33 @@
+# Click a point in the "Click on Image" window -> TAPIR tracks it in pixel
+# space -> depth at the tracked pixel -> 3D point in the camera frame ->
+# robot base frame with the tutorial 14 calibration -> published on
+# point_channel (point_set_t) for the IK QP controller.
+# Same parameters as RoPhiTutorial configs/perception/tapnet/click_and_track_one.yaml;
+# only the camera channel (sim calib_camera) and the calibration file differ.
+name: tapnet_click_and_track_calib
+
+checkpoint_name: "causal_bootstapir_checkpoint.pt"
+
+# T_cam2base written by run_camera_calibration_v2.py. null = use the
+# CameraInfo extrinsic instead (MuJoCo ground truth in sim).
+cam2base_path: configs/calibration_tutorial/results/calib_camera.yaml
+
+# tapnet requires resizing images to 256x256
+resize_height: 256
+resize_width: 256
+update_freq: 30.0
+# use multiple points to increase tracking consistency
+use_multi_points: true
+num_sample_points: 10
+# sample box size in terms of pixels
+sample_box_size: 30
+# threshold for filtering out uncertain points
+uncertainty_threshold: 0.5
+sub_manager:
+  name: single_rgbd
+  rgbd_channel: calib_camera
+  max_sub_freq: 2000
+pub_manager:
+  name: point3d
+  point_channel: click_and_point
+  max_pub_freq: 2000

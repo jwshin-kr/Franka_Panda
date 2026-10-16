@@ -5,3 +5,6 @@ MUJOCO_LOG.TXT
 # C++ bridge build
 communication/franka/build/
 .vscode/
+
+# TAPIR checkpoint (208 MB, download: see README)
+perception/tapnet/checkpoints/
